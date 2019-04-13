@@ -8,6 +8,6 @@
 
 **Candidati** del *Gruppo 9*:
 
-	* Davide Galati
-	* Gianpaolo Cascardo
-	* Mariachiara
+* Davide Galati
+* Gianpaolo Cascardo
+* Mariachiara
