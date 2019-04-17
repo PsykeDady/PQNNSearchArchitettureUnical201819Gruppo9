@@ -18,8 +18,9 @@
 * ~~distanza euclidea -> dist(x,y) : sqrt((Sommatoria(xi,yi))^2)~~
 * ~~mindist(int* x, int* dataset)~~
 * ~~vq(codebook,Dataset): ad ogni elemento in dataset y applica il quantizzatore~~
-* obiettivo() :  Sommatoria(distanza(y,q(y))^2)
-* k-means : tecnica da applicare con vq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media della sua cella di voronoi **(? media calcolata come ?)** si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro)
+* ~~obiettivo() :  Sommatoria(distanza(y,q(y))^2)~~
+* ~~nuovi centroidi=nuovicentroidi(mappa)~~
+* k-means(eps) : tecnica da applicare con vq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media della sua cella di voronoi **(? media calcolata come ?)** si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro)
 * product quantization : 
   * divide(): divide ogni vettore in m sottovettori di dimensione d*=d/m (m passato come parametro)
     divide(v)=(v1,v2,v3....vm)

@@ -97,10 +97,10 @@ void printm(int d, int n, double *m){
     int i=0,j=0;
     for(;i<n;i++){
         printf("|");
-        for(;j<d-1;j++){
+        for(j=0;j<d-1;j++){
             printf("%lf,",m[i*d+j]);
         }
-        printf("%lf|\n",m[n*d -1]);
+        printf("%lf|\n",m[i*d+d-1]);
     }
 }
 
@@ -174,13 +174,95 @@ double* vq(int d, int k, int n, double *codebook, double *dataset){
  * si riempie il codebook con valori random
  */
 void init_codebook(int d, int n, double* dataset, int k, double* codebook){
-    int i=0;
+    int i=0,j=0,flag=1,r=0;
+    int *rp=(int*)malloc(sizeof(int)*k);
 
-    for(;i<k;i++){
-        int r= (int)(rand()%n); // TODO FIXIT potrebbero uscire uguali
+    for(;i<k;i++){        
+        do{
+            flag=1;
+            r= (int)(rand()%n); 
+            for(j=0;j<i;j++) {
+                if(r==rp[j])
+                {
+                    flag=0;
+                }
+            }//for j
+        }while(flag==0); //do flag
+        rp[i]=r;
         copyv(d,codebook,i,dataset,r);
-    }
+    }//for i
 }
+
+/**
+ * argomenti:
+ *  - 'd' coordinate del singolo punto
+ *  - 'n' numero di righe della map (quindi la map contiene n*d*2 elementi)
+ *  - 'map' una matrice che contiene per ogni riga un punto del dataset e il relativo centroide
+ * 
+ * descrizione:
+ *  
+ */
+double obiettivo(int d, int n, double *map){
+    int i,j;
+    double somma=0,parziale,yi,qci;
+    for(i=0;i<n;i++){
+        parziale=dist(d,map,i*d,map,d*(i+1));
+        parziale*=parziale;
+        somma+=parziale;
+    }
+    return somma;
+}
+//verifica du evettori uguali
+int equals(int d, double *x, int xi, double *y, int yi){
+    int i=0,flag=0;
+    
+    for(i=0; i<d&&flag==0; i++){
+        flag=(x[xi*d+i]!=y[yi*d+i])?1:0;
+    }
+
+    return flag; //ritorna 0 se uguali, 1 se diversi
+}
+
+/**
+ * argomenti:
+ *  - 'd' numero di coordinate per punto
+ *  - 'n' numero di elementi del dataset (righe di map)
+ *  - 'map' mappa di corrispondenza punto-centroide associato
+ *  - 'k' numero di centroidi
+ *  - 'codebook' lista di centroidi
+ * descrizione:
+ * 
+ */
+void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
+    /*
+    -per ogni centroide, media geometrica dei suoi punti
+    -sostituire elementi del vecchio codebook
+    */
+   int i,j,w,c,flag;
+   double *nc=(double*)malloc(sizeof(double)*d); //vettore da mettere al posto di ci (tutto pari ad 1)
+   for(i=0; i<k; i++){
+        for(w=0;w<d;w++) nc[w]=0;
+        c=0;
+        for(j=0;j<n;j++){
+            flag=equals(d,codebook,i,map,j*2+1);
+            
+            if(flag==0){
+                for(w=0;w<d;w++){
+                    nc[w]+=map[j*2*d+w];
+                }
+                c++;
+            }
+        }
+       //a questo punto nc è completo, va solo fatta la radice d-esima e sostituita a codebook
+       double esp=1.0/c;
+       
+       
+       for(w=0;w<d;w++){
+            codebook[i*d+w]=nc[w]/c;
+       }
+   }
+}
+
 
 int main (char*args, int argv){
     /**dimensione dei singoli punti (vettori)*/
@@ -220,7 +302,7 @@ int main (char*args, int argv){
         }
     }
     printf("riepilogando hai inserito dataset:\n"); 
-    printv(d*n,dataset,0);
+    printm(d,n,dataset);
 
     printf("creando il codebook...\n");
     init_codebook(d,n,dataset,k,codebook);
@@ -228,7 +310,13 @@ int main (char*args, int argv){
 
     res=vq(d,k,n,codebook,dataset);
     printf("ordunque il tuo res è uscito:\n");
-    printv(d*2*n,res,0); 
+    printm(2*d,n,res);
+
+    printf("calcolando nuovi centroidi...\n");
+    nuovicentroidi(d,n,res,k,codebook);
+
+    printf("ecco i nuovi centroidi che sono usciti:\n");
+    printv(d*k,codebook,0);
 
     free(dataset);
     free(codebook);
