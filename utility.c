@@ -13,6 +13,16 @@
     //#define DEBUG_DIST
 #endif
 
+/**
+ * argomenti:
+ *  -'d' numero elementi da copiare
+ *  -'dest' vettore destinazione
+ *  -'desti' indice iniziale di dest
+ *  -'src' vettore sorgente
+ *  -'srci' indice iniziale vettore sorgente
+ * descrizione: 
+ *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
+ */
 void copyv(int d, double* dest, int desti, double *src, int srci){
     for(int i=0;i<d;i++){
         dest[desti*d+i]=src[srci*d+i];
@@ -20,7 +30,16 @@ void copyv(int d, double* dest, int desti, double *src, int srci){
 }
 
 /**
- * calcola la distanza euclidea tra due punti dati considerando ...
+ * argomenti:
+ *  - 'd' dimensione elementi 
+ *  - 'x' matrice di vettori in Rd
+ *  - 'xi' indice iniziale di x
+ *  - 'y' matrice di vettori in Rd
+ *  - 'yi' indice iniziale di y 
+ * descrizione:
+ *  calcola la distanza euclidea tra un punto di x (segnato a partire da xi) e un punto di y (segnato a partire da yi).
+ * 
+ * A partire da xi e da yi vengono analizzati d elementi
  * 
  */
 double dist(int d,double *x, int xi, double *y, int yi){
@@ -49,6 +68,14 @@ double dist(int d,double *x, int xi, double *y, int yi){
     return sqrt(somma);
 }
 
+/**
+ * argomenti:
+ *  - 'd' numero di celle da stampare
+ *  - 'v' vettore da cui prelevare le celle
+ *  - 'vi' indice iniziale di v
+ * descrizione:
+ *  stampa d celle del vettore v passato come parametro a partire da vi
+ */
 void printv(int d,double *v,int vi){
     printf("[");
     for(int i=0; i< d-1;i++){
@@ -58,9 +85,37 @@ void printv(int d,double *v,int vi){
     printf("]\n");
 }
 
+/**
+ * argomenti:
+ *  - 'd' dimensione di ogni vettore
+ *  - 'n' numero vettori
+ *  - 'm' matrice da stampare
+ * descrizione:
+ *  stampa un intera matrice divisia in n vettori e ognuno di dimensione d
+ */
+void printm(int d, int n, double *m){
+    int i=0,j=0;
+    for(;i<n;i++){
+        printf("|");
+        for(;j<d-1;j++){
+            printf("%lf,",m[i*d+j]);
+        }
+        printf("%lf|\n",m[n*d -1]);
+    }
+}
 
-
-int mindist(int d, int k,double * dataset, int di, double* codebook){
+/**
+ * argomenti:
+ *  - 'd' dimensione dei singoli vettori
+ *  - 'dataset' insieme di punti da cui prelevare il punto query 
+ *  - 'di' indice iniziale del punto query 
+ *  - 'k' numero di centroidi nel codebook
+ *  - 'codebook' insieme di centroidi (vettori di Rd) 
+ * 
+ * descrizione:
+ *  considerato l'elemento indicizzato in dataset a partire dall'indice di (con size d) si  
+ */
+int mindist(int d, double *dataset, int di, int k, double* codebook){
 
     int i,ris=0;
     float mind,ndist;
@@ -98,7 +153,7 @@ double* vq(int d, int k, int n, double *codebook, double *dataset){
    int i,j;
    double *res=(double*)malloc(sizeof(double) * n*2*d);
    for(i=0;i<n;i++){
-       int icent=mindist(d,k,dataset,i*d,codebook);
+       int icent=mindist(d,dataset,i*d,k,codebook);
        for(j=0;j<d;j++){
            res[(i*2*d)+j]=dataset[(i*d)+j];
            res[(i*2*d)+d+j]=codebook[(icent*d)+j];
