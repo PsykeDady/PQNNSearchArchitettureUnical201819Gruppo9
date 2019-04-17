@@ -15,10 +15,9 @@
 **TODO:**
 
 * ~~creazione progetto su github~~
-* distanza euclidea -> dist(x,y) : sqrt((Sommatoria(xi,yi))^2)
-* codebook = array di centroidi 
-* quantizzatore(codebook,x):centroide più vicino ad x
-* vq(codebook,Dataset): ad ogni elemento in dataset y applica il quantizzatore
+* ~~distanza euclidea -> dist(x,y) : sqrt((Sommatoria(xi,yi))^2)~~
+* ~~mindist(int* x, int* dataset)~~
+* ~~vq(codebook,Dataset): ad ogni elemento in dataset y applica il quantizzatore~~
 * obiettivo() :  Sommatoria(distanza(y,q(y))^2)
 * k-means : tecnica da applicare con vq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media della sua cella di voronoi **(? media calcolata come ?)** si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro)
 * product quantization : 
