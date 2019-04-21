@@ -2,32 +2,38 @@
  * File con i metodi che poi verranno spostati nei file che ci manderà il professore.
  */
 
+//scaricrare gprof
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
+//decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
 #define DEBUG
 
+/**
+ * lista di flag di debug, commentare/decommentare singolo flag per disabilitare/abilitare le stampe di debug del relativo metodo
+ */
 #ifdef DEBUG
     //#define DEBUG_DIST
+    //#define DEBUG_PRINTV
+    //#define DEBUG_PRINTM
+    //#define DEBUG_COPYV
+    //#define DEBUG_MINDIST
+    //#define DEBUG_VQ
+    //#define DEBUG_INITCODEBOOK
+    //#define DEBUG_OBIETTIVO
+    //#define DEBUG_EQUALS
+    //#define DEBUG_NUOVICENTROIDI
+    //#define DEBUG_MAIN
 #endif
 
-/**
- * argomenti:
- *  -'d' numero elementi da copiare
- *  -'dest' vettore destinazione
- *  -'desti' indice iniziale di dest
- *  -'src' vettore sorgente
- *  -'srci' indice iniziale vettore sorgente
- * descrizione: 
- *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
- */
-void copyv(int d, double* dest, int desti, double *src, int srci){
-    for(int i=0;i<d;i++){
-        dest[desti*d+i]=src[srci*d+i];
-    }
-}
+//template debug da incollare ogni metodo:
+/* #ifdef DEBUG_
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO '' #####\n");
+#endif */
+
 
 /**
  * argomenti:
@@ -38,11 +44,14 @@ void copyv(int d, double* dest, int desti, double *src, int srci){
  *  - 'yi' indice iniziale di y 
  * descrizione:
  *  calcola la distanza euclidea tra un punto di x (segnato a partire da xi) e un punto di y (segnato a partire da yi).
- * 
  * A partire da xi e da yi vengono analizzati d elementi
  * 
  */
 double dist(int d,double *x, int xi, double *y, int yi){
+
+    #ifdef DEBUG_DIST 
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
+    #endif
 
     double somma=0, differenza=0;
     for(int i=0;i<d;i++){
@@ -77,6 +86,10 @@ double dist(int d,double *x, int xi, double *y, int yi){
  *  stampa d celle del vettore v passato come parametro a partire da vi
  */
 void printv(int d,double *v,int vi){
+    #ifdef DEBUG_PRINTV
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printv' #####\n");
+    #endif
+
     printf("[");
     for(int i=0; i< d-1;i++){
         printf("%lf,",v[i]);
@@ -94,6 +107,10 @@ void printv(int d,double *v,int vi){
  *  stampa un intera matrice divisia in n vettori e ognuno di dimensione d
  */
 void printm(int d, int n, double *m){
+    #ifdef PRINTV
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printm' #####\n");
+    #endif
+    
     int i=0,j=0;
     for(;i<n;i++){
         printf("|");
@@ -106,6 +123,25 @@ void printm(int d, int n, double *m){
 
 /**
  * argomenti:
+ *  -'d' numero elementi da copiare
+ *  -'dest' vettore destinazione
+ *  -'desti' indice iniziale di dest
+ *  -'src' vettore sorgente
+ *  -'srci' indice iniziale vettore sorgente
+ * descrizione: 
+ *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
+ */
+void copyv(int d, double* dest, int desti, double *src, int srci){
+    #ifdef DEBUG_COPYV
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'copyv' #####\n");
+    #endif
+    for(int i=0;i<d;i++){
+        dest[desti*d+i]=src[srci*d+i];
+    }
+}
+
+/**
+ * argomenti:       
  *  - 'd' dimensione dei singoli vettori
  *  - 'dataset' insieme di punti da cui prelevare il punto query 
  *  - 'di' indice iniziale del punto query 
@@ -113,9 +149,12 @@ void printm(int d, int n, double *m){
  *  - 'codebook' insieme di centroidi (vettori di Rd) 
  * 
  * descrizione:
- *  considerato l'elemento indicizzato in dataset a partire dall'indice di (con size d) si  
+ *  considerato il punto indicizzato nel dataset a partire dall'indice di (in R^d) si cerca un centroide nel codebook (tra k centroidi) tale da minimizzare la distanza. Ogni distanza viene calcolata con la funzione dist
  */
 int mindist(int d, double *dataset, int di, int k, double* codebook){
+    #ifdef DEBUG_MINDIST
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'mindist' #####\n");
+    #endif
 
     int i,ris=0;
     float mind,ndist;
@@ -135,20 +174,27 @@ int mindist(int d, double *dataset, int di, int k, double* codebook){
 }
 
 /**
- * restituisce un insieme della cardinalita' del dataset*2 dove ad ogni punto viene associato il suo centroide (ogni valore viene diviso in una coppia quindi, punto-centroide)
+ * argomenti:
+ * -d=dimensione singoli vettori
+ * -k=numero di centroidi
+ * -n=dimensione dataset
+ * -codebook=insieme centroidi
+ * -dataset=insieme di punti
  * 
- * n=dimensione dataset
- * k=numero di centroidi
- * d=dimensione singoli vettori
- * codebook=insieme centroidi
- * dataset=insieme di punti
+ * descrizione:
+ * -restituisce un insieme della cardinalita' del dataset*2 dove ad ogni punto viene associato il suo centroide (ogni valore viene diviso in una coppia quindi, punto-centroide), ogni centroide viene calcolato con la funzione di minima distanza (mindist)
+ * 
  */
 double* vq(int d, int k, int n, double *codebook, double *dataset){
-    /*
-    - creare una struttura dataset=2*dataset
-    - prendi un elemento del dataset
-    - cercare il centroide (mindist)
-    - aggiungere al risultato dataset(i),centroide(dataset(i))
+    #ifdef DEBUG_VQ
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'vq' #####\n");
+    #endif
+    /* 
+    passi dell'algoritmo
+        - creare una struttura dataset=2*dataset
+        - prendi un elemento del dataset
+        - cercare il centroide (mindist)
+        -aggiungere al risultato dataset(i),centroide(dataset(i))
     */
    int i,j;
    double *res=(double*)malloc(sizeof(double) * n*2*d);
@@ -164,16 +210,20 @@ double* vq(int d, int k, int n, double *codebook, double *dataset){
 }
 
 /**
- * dati:
- *  d=dimensione spazio vettoriale
- *  n= dimensione dataset
- *  dataset= insieme di punti in Rd
- *  k= numero di centroidi
- *  codebook= codebook da riempire
+ * argomenti:
+ *  -d=dimensione spazio vettoriale
+ *  -n= dimensione dataset
+ *  -dataset= insieme di punti in Rd
+ *  -k= numero di centroidi
+ *  -codebook= codebook da riempire
  * 
- * si riempie il codebook con valori random
+ * descrizione:
+ * -si riempie il codebook con valori random facenti parte dell'insieme di partenza
  */
 void init_codebook(int d, int n, double* dataset, int k, double* codebook){
+    #ifdef DEBUG_INITCODEBOOK
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
+    #endif
     int i=0,j=0,flag=1,r=0;
     int *rp=(int*)malloc(sizeof(int)*k);
 
@@ -200,9 +250,12 @@ void init_codebook(int d, int n, double* dataset, int k, double* codebook){
  *  - 'map' una matrice che contiene per ogni riga un punto del dataset e il relativo centroide
  * 
  * descrizione:
- *  
+ *  -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
  */
 double obiettivo(int d, int n, double *map){
+    #ifdef DEBUG_OBIETTIVO
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
+    #endif
     int i,j;
     double somma=0,parziale,yi,qci;
     for(i=0;i<n;i++){
@@ -212,8 +265,24 @@ double obiettivo(int d, int n, double *map){
     }
     return somma;
 }
-//verifica du evettori uguali
+
+
+/**
+ * argomenti:
+ * -d: dimensione degli elementi da controllare per ogni vettore
+ * -*x: primo vettore
+ * -xi: indice inizio da cui controllare gli elementi di x
+ * -*y: secondo vettore 
+ * -yi: indice inizio da cui controllare gli elementi di 
+ * 
+ * descrizione:
+ * - verifica se due vettori x e y, a partire ognuno da un certo indice indicato (xi/yi rispettivamente), sono uguali per ogni elemento
+ * restituisce 0 se sono diversi, 1 se sono uguali
+ */
 int equals(int d, double *x, int xi, double *y, int yi){
+    #ifdef DEBUG_EQUALS
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'equals' #####\n");
+    #endif
     int i=0,flag=0;
     
     for(i=0; i<d&&flag==0; i++){
@@ -227,15 +296,18 @@ int equals(int d, double *x, int xi, double *y, int yi){
  * argomenti:
  *  - 'd' numero di coordinate per punto
  *  - 'n' numero di elementi del dataset (righe di map)
- *  - 'map' mappa di corrispondenza punto-centroide associato
+ *  - 'map' mappa di corrispondenza punto-centroide associato 
  *  - 'k' numero di centroidi
  *  - 'codebook' lista di centroidi
  * descrizione:
- * 
+ * - genera un set di nuovi centroidi calcolando la media degli elementi che gli sono associati
  */
 void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
+    #ifdef DEBUG_NUOVICENTROIDI
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'nuovicentroidi' #####\n");
+    #endif
     /*
-    -per ogni centroide, media geometrica dei suoi punti
+    -per ogni centroide, media dei suoi punti
     -sostituire elementi del vecchio codebook
     */
    int i,j,w,c,flag;
