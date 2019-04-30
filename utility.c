@@ -411,16 +411,16 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebo
     
 
     //la prima volta va chiamato separatamente per evitare l'aggiornamento dei centroidi calcolati casualmente DA DIRE A M.C.
-    calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+    delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
 
     while(t++<tmin){
         nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
-        calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+        delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps){
          nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
-        calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+        delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
 
 }
