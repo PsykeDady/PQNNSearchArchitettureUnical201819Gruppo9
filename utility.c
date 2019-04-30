@@ -381,11 +381,11 @@ double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
 }
 
 double calc_delta(int d, int m, int k, double* codebook, int n, double* dataset, double *map, double *ob){
+   
     map=pq(d,m,k,codebook,n,dataset);
     double nuovo_ob= obiettivo(d,n,map);
     double delta =*ob-nuovo_ob;
     *ob=nuovo_ob;
-    nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
     return delta;
 }
 
@@ -409,13 +409,17 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebo
     
     double ob=1000 /*valore molto grande, così da non intaccare i risultati*/;
     
-    //FARE VEDERE A GIANPY SPIEGARE PUNTATORE
-    
+
+    //la prima volta va chiamato separatamente per evitare l'aggiornamento dei centroidi calcolati casualmente DA DIRE A M.C.
+    calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+
     while(t++<tmin){
+        nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
         calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps){
+         nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
         calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
 
