@@ -336,6 +336,20 @@ void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
 }
 
 
+void k_means( float eps, int tmin, int tmax){
+
+    /* 
+     - init_centroi
+     - usare vq(codebook, dataset)
+     - delta= obiettivo(old)-obiettivo(nuovo)
+     - condizione di terminazione: (tmin<=t && (tmax<t || delta))
+    */
+
+
+
+}
+
+
 int main (char*args, int argv){
     /**dimensione dei singoli punti (vettori)*/
     int d;

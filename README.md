@@ -20,12 +20,12 @@
 * ~~vq(codebook,Dataset): ad ogni elemento in dataset y applica il quantizzatore~~
 * ~~obiettivo() :  Sommatoria(distanza(y,q(y))^2)~~
 * ~~nuovi centroidi=nuovicentroidi(mappa)~~  **(?deve appartenere al set di partenza il nuovo centroide?)**
-* k-means(eps) : tecnica da applicare con vq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media della sua cella di voronoi si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro)
 * product quantization : 
   * divide(): divide ogni vettore in m sottovettori di dimensione d*=d/m (m passato come parametro)
     divide(v)=(v1,v2,v3....vm)
   * pq(v) : applica la quantizzazione su ogni sottovettore e li concatena 
-    q(divide(xv)= (q(v1),q(vm),...,q(vm))
+    q(divide(xv)= (q(v1),q(vm),...,q(vm)) **(? fare questo indipendentemente da vq? ?)** 
+* k-means(eps) : tecnica da applicare con vq e pq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media **(?media calcolata come?)** della sua cella di voronoi si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro), il tutto deve essere fatto in un numero di tmin iterazioni minimo e massimo tmax
 * ANN esaustiva
   * distanza simmetrica o SDC(x,y): SQRT(Sommatoria(distanza(q(x),q(y))^2)), tenendo in memoria l'insieme di distanze tra ogni centroide
   * distanza asimmetrita o ADC(x,y): SQRT(Sommatoria(distanza(x,q(y))^2)),    tenendo in memoria per ogni diversa x le distanze da ogni centroide
@@ -39,4 +39,4 @@
     * calcolare attraverso questo un qp unico per tutti **(?unico in che senso?)**
     * per ogni centroide ci determinare approx_dist(x,y) tale che q(y)=ci e collezionare le K distanze più piccoli
     * restituire quindi i K punti
-
+* unire il codice ai template dati da Angiulli (64-32bit), preparare i dati come matrice ANN **(? chiedere come vendono salvati gli indici in ANN, perchè sono interi? ?)**

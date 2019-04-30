@@ -183,8 +183,8 @@ void save_ANN(char* filename, int* ANN, int nq, int knn) {
 }
 
 
-extern void pqnn64_index(params* input);
-extern int* pqnn64_search(params* input);
+// extern void pqnn64_index(params* input);
+// extern int* pqnn64_search(params* input);
 
 
 /*
@@ -197,7 +197,7 @@ void pqnn_index(params* input) {
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
     
-    pqnn64_index(input); // Chiamata funzione assembly
+    //pqnn64_index(input); // Chiamata funzione assembly
 
     // -------------------------------------------------
 
@@ -214,7 +214,7 @@ void pqnn_search(params* input) {
     // Codificare qui l'algoritmo di interrogazione
     // -------------------------------------------------
     
-    pqnn64_search(input); // Chiamata funzione assembly
+    //pqnn64_search(input); // Chiamata funzione assembly
 
 	// Restituisce il risultato come una matrice di nq * knn
 	// identificatori associati agli ANN approssimati delle nq query.
