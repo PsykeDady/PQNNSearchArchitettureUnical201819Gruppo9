@@ -335,17 +335,89 @@ void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
    }
 }
 
-
-void k_means( float eps, int tmin, int tmax){
+/**
+ * argomenti:
+ * -d=dimensione singoli vettori
+ * -m=numero di sottovettori
+ * -k=numero di centroidi
+ * -codebook=insieme centroidi
+ * -n=dimensione dataset
+ * -dataset=insieme di punti
+ * 
+ * descrizione:
+ * -TODO
+ * 
+ */
+double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
+    #ifdef DEBUG_PQ
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'pq' #####\n");
+    #endif
 
     /* 
-     - init_centroi
-     - usare vq(codebook, dataset)
-     - delta= obiettivo(old)-obiettivo(nuovo)
-     - condizione di terminazione: (tmin<=t && (tmax<t || delta))
+    passi dell'algoritmo
+        - creare una struttura dataset=2*dataset
+        - prendi un elemento del dataset
+        - cercare il centroide (mindist)
+        -aggiungere al risultato dataset(i),centroide(dataset(i))
     */
 
+   int dstar=d/m; //numero elementi sottovettori
 
+   int i,j,w;
+   double *res=(double*)malloc(sizeof(double) * n*2*d);
+   for(i=0;i<n;i++){ // indice di riga
+       for(w=0;w<m;w++){ // indice di sottovettore
+        int icent=mindist(dstar,dataset,w*dstar,k,codebook); //TODO= minima distanza appropriata con sottovettori
+        /* for(j=0;j<d;j++){
+            res[(i*2*d)+j]=dataset[(i*d)+j];
+            res[(i*2*d)+d+j]=codebook[(icent*d)+j];
+            } */
+        //sappiamo  l'indice di codebook del punto più vicino  al sottovettore  
+       }//w
+       //
+   }//i
+
+   return res;
+}
+
+double calc_delta(int d, int m, int k, double* codebook, int n, double* dataset, double *map, double *ob){
+    map=pq(d,m,k,codebook,n,dataset);
+    double nuovo_ob= obiettivo(d,n,map);
+    double delta =*ob-nuovo_ob;
+    *ob=nuovo_ob;
+    nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
+    return delta;
+}
+
+
+
+void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebook, int n, double* dataset, double* res){
+
+    /* 
+     1- init_centroidi
+     2- avendo codebook i centroidi e il dataset, crea una mappa che ad ogni elemento del dataset, associa un centroide (vq- quantizzazione)
+     3- calcola la funziona la obiettivo
+     4- delta=obiettivo(old)-obiettivo(nuovo)
+     5- condizione di terminazione: (tmin<=t && (tmax<t || delta<=eps)), se vera termina, sennò avanti
+     6- sostituisce i centroidi con la media
+     7- goto 2
+    */
+
+    double tmp=0;
+    int t=1;
+    double delta=0;
+    
+    double ob=1000 /*valore molto grande, così da non intaccare i risultati*/;
+    
+    //FARE VEDERE A GIANPY SPIEGARE PUNTATORE
+    
+    while(t++<tmin){
+        calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+    }
+    // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
+    while(tmax>=t++ && delta>eps){
+        calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+    }
 
 }
 
