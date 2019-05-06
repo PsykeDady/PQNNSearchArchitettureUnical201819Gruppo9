@@ -414,12 +414,12 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebo
     delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
 
     while(t++<tmin){
-        nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
+        nuovicentroidi(d,n,res,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
         delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps){
-         nuovicentroidi(d,n,map,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
+         nuovicentroidi(d,n,res,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
         delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
     }
 
