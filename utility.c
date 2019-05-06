@@ -38,6 +38,7 @@
 /**
  * argomenti:
  *  - 'd' dimensione elementi 
+ *  - 'mi' indice partenza sottovettore (per algoritmo a sottovettori)
  *  - 'x' matrice di vettori in Rd
  *  - 'xi' indice iniziale di x
  *  - 'y' matrice di vettori in Rd
@@ -47,14 +48,14 @@
  * A partire da xi e da yi vengono analizzati d elementi
  * 
  */
-double dist(int d,double *x, int xi, double *y, int yi){
+double dist(int d, int mi, double *x, int xi, double *y, int yi){
 
     #ifdef DEBUG_DIST 
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
     #endif
 
     double somma=0, differenza=0;
-    for(int i=0;i<d;i++){
+    for(int i=mi*d;i<d;i++){
         differenza=x[xi+i]-y[yi+i];
         #ifdef DEBUG_DIST
             printf("differenza: %lf\n",differenza);
@@ -142,7 +143,8 @@ void copyv(int d, double* dest, int desti, double *src, int srci){
 
 /**
  * argomenti:       
- *  - 'd' dimensione dei singoli vettori
+ *  - 'd' dimensione dei singoli vettoriù
+ *  - 'mi' indice di colonna di partenza (per algoritmo a sottovettori pq)
  *  - 'dataset' insieme di punti da cui prelevare il punto query 
  *  - 'di' indice iniziale del punto query 
  *  - 'k' numero di centroidi nel codebook
@@ -151,7 +153,7 @@ void copyv(int d, double* dest, int desti, double *src, int srci){
  * descrizione:
  *  considerato il punto indicizzato nel dataset a partire dall'indice di (in R^d) si cerca un centroide nel codebook (tra k centroidi) tale da minimizzare la distanza. Ogni distanza viene calcolata con la funzione dist
  */
-int mindist(int d, double *dataset, int di, int k, double* codebook){
+int mindist(int d, int mi, double *dataset, int di, int k, double* codebook){
     #ifdef DEBUG_MINDIST
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'mindist' #####\n");
     #endif
@@ -159,11 +161,11 @@ int mindist(int d, double *dataset, int di, int k, double* codebook){
     int i,ris=0;
     float mind,ndist;
 
-    mind=dist(d,dataset,di,codebook,0);
+    mind=dist(d,mi,dataset,di,codebook,0);
 
 
     for(i=1;i<k;i++){
-        ndist=dist(d,dataset,di,codebook,i*d);
+        ndist=dist(d,mi,dataset,di,codebook,i*d);
         if(mind>ndist){
             mind=ndist;
             ris=i;
@@ -183,9 +185,9 @@ int mindist(int d, double *dataset, int di, int k, double* codebook){
  * 
  * descrizione:
  * -restituisce un insieme della cardinalita' del dataset*2 dove ad ogni punto viene associato il suo centroide (ogni valore viene diviso in una coppia quindi, punto-centroide), ogni centroide viene calcolato con la funzione di minima distanza (mindist)
- * 
+ * TODO: obsoleto, può essere riscritto come pq con
  */
-double* vq(int d, int k, int n, double *codebook, double *dataset){
+/* double* vq(int d, int k, int n, double *codebook, double *dataset){
     #ifdef DEBUG_VQ
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'vq' #####\n");
     #endif
@@ -195,7 +197,7 @@ double* vq(int d, int k, int n, double *codebook, double *dataset){
         - prendi un elemento del dataset
         - cercare il centroide (mindist)
         -aggiungere al risultato dataset(i),centroide(dataset(i))
-    */
+    
    int i,j;
    double *res=(double*)malloc(sizeof(double) * n*2*d);
    for(i=0;i<n;i++){
@@ -207,7 +209,7 @@ double* vq(int d, int k, int n, double *codebook, double *dataset){
    }
 
    return res;
-}
+} */
 
 /**
  * argomenti:
@@ -252,14 +254,22 @@ void init_codebook(int d, int n, double* dataset, int k, double* codebook){
  * descrizione:
  *  -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
  */
-double obiettivo(int d, int n, double *map){
+double obiettivo(int d, int n, double* dataset, double *map){
     #ifdef DEBUG_OBIETTIVO
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
     #endif
-    int i,j;
-    double somma=0,parziale,yi,qci;
+    int i;
+    double somma=0,parziale;
     for(i=0;i<n;i++){
-        parziale=dist(d,map,i*d,map,d*(i+1));
+        parziale=dist(d,0,dataset,i,map,i); 
+
+        /**
+         * for (w per tutti i sottovettori){
+         *      dist(dstar,w,dataset,i,codebook,map[i]);
+         * } POSSIBILE OTTIMIZZAZIONE
+         * 
+         */
+
         parziale*=parziale;
         somma+=parziale;
     }
@@ -325,10 +335,6 @@ void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
                 c++;
             }
         }
-       //a questo punto nc è completo, va solo fatta la radice d-esima e sostituita a codebook
-       double esp=1.0/c;
-       
-       
        for(w=0;w<d;w++){
             codebook[i*d+w]=nc[w]/c;
        }
@@ -347,6 +353,10 @@ void nuovicentroidi(int d, int n, double *map, int k, double *codebook){
  * descrizione:
  * -TODO
  * 
+ * 
+ * OTTIMIZZAZIONE:
+ *  - si può restituire la mappa come raccolta di indici del codebook
+ * 
  */
 double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
     #ifdef DEBUG_PQ
@@ -355,72 +365,74 @@ double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
 
     /* 
     passi dell'algoritmo
-        - creare una struttura dataset=2*dataset
+        - creare una struttura result set, ogni riga sarà associata alla riga corrispondente del dataset, le colonne rappresentano le coordinate del centroide associato
         - prendi un elemento del dataset
-        - cercare il centroide (mindist)
+        - si divide in m sottovettori di dimensione dstar
+        - per ogni sottovettore, si cerca un sottocentroide (mindist) più vicino
+        -trovati gli m sottovettori, vanno concatenati per ottenere la quantizzazione del vettore
         -aggiungere al risultato dataset(i),centroide(dataset(i))
     */
 
    int dstar=d/m; //numero elementi sottovettori
 
    int i,j,w;
-   double *res=(double*)malloc(sizeof(double) * n*2*d);
+   double *res=(double*)malloc(sizeof(double) * n*d);
    for(i=0;i<n;i++){ // indice di riga
        for(w=0;w<m;w++){ // indice di sottovettore
-        int icent=mindist(dstar,dataset,w*dstar,k,codebook); //TODO= minima distanza appropriata con sottovettori
-        /* for(j=0;j<d;j++){
-            res[(i*2*d)+j]=dataset[(i*d)+j];
-            res[(i*2*d)+d+j]=codebook[(icent*d)+j];
-            } */
-        //sappiamo  l'indice di codebook del punto più vicino  al sottovettore  
-       }//w
-       //
+            int icent=mindist(dstar,w,dataset,i,k,codebook); 
+            //sappiamo  l'indice di codebook del punto più vicino  al sottovettore 
+            int mi=w*dstar; 
+            for(j=0;j<dstar;j++){
+                res[i*d+mi+j]=codebook[icent*d+mi+j];
+            }//j
+        }//w
+       
    }//i
 
    return res;
 }
 
-double calc_delta(int d, int m, int k, double* codebook, int n, double* dataset, double *map, double *ob){
-   
-    map=pq(d,m,k,codebook,n,dataset);
-    double nuovo_ob= obiettivo(d,n,map);
-    double delta =*ob-nuovo_ob;
-    *ob=nuovo_ob;
-    return delta;
-}
+
 
 
 
 void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebook, int n, double* dataset, double* res){
 
-    /* 
-     1- init_centroidi
-     2- avendo codebook i centroidi e il dataset, crea una mappa che ad ogni elemento del dataset, associa un centroide (vq- quantizzazione)
-     3- calcola la funziona la obiettivo
-     4- delta=obiettivo(old)-obiettivo(nuovo)
-     5- condizione di terminazione: (tmin<=t && (tmax<t || delta<=eps)), se vera termina, sennò avanti
-     6- sostituisce i centroidi con la media
-     7- goto 2
+    /*
+     1- avendo codebook i centroidi e il dataset, crea una mappa che ad ogni elemento del dataset, associa un centroide (vq- quantizzazione)
+     2- calcola la funziona la obiettivo
+     3- delta=obiettivo(old)-obiettivo(nuovo)
+     4- condizione di terminazione: (tmin<=t && (tmax<t || delta<=eps)), se vera termina, sennò avanti
+     5- sostituisce i centroidi con la media
+     6- goto 2
     */
 
     double tmp=0;
-    int t=1;
-    double delta=0;
+    int t=0;
+    double delta=0;//per non uscire la prima volta dal secondo while
     
-    double ob=1000 /*valore molto grande, così da non intaccare i risultati*/;
+    double ob=-1; /*valore molto grande, così da non intaccare i risultati*/
+    double nuovo_ob=0;
+
     
 
-    //la prima volta va chiamato separatamente per evitare l'aggiornamento dei centroidi calcolati casualmente DA DIRE A M.C.
-    delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
-
-    while(t++<tmin){
-        nuovicentroidi(d,n,res,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
-        delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+    while(t++<tmin-1){
+        res=pq(d,m,k,codebook,n,dataset);
+        nuovicentroidi(d,n,res,k,codebook); 
     }
+
+    //l'ultima volta il ciclo lo facciamo al di fuori del while
+    res=pq(d,m,k,codebook,n,dataset);
+    ob=obiettivo(d,n,dataset,res);
+    delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+        
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
-    while(tmax>=t++ && delta>eps){
-         nuovicentroidi(d,n,res,k,codebook); //va fatto a prescindere? o se la condizione è rispettata?
-        delta=calc_delta(d,m,k,codebook,n,dataset,res,&ob);
+    while(tmax>=t++ && delta>eps ){
+        nuovicentroidi(d,n,res,k,codebook); 
+        res=pq(d,m,k,codebook,n,dataset);
+        nuovo_ob= obiettivo(d,n,dataset,res);
+        delta =ob-nuovo_ob;
+        ob=nuovo_ob;
     }
 
 }
