@@ -27,7 +27,9 @@
     q(divide(xv)= (q(v1),q(vm),...,q(vm))~~
 * ~~k-means(eps) : tecnica da applicare con vq e pq, si prendono random k centroidi, si applica vq e si sostituisce ogni centroide come media della sua cella di voronoi si ferma dopo le due iterazioni successive ad un incremento impercettibile della funzione obiettivo (minore ad una soglia passata come parametro), il tutto deve essere fatto in un numero di tmin iterazioni minimo e massimo tmax~~
 
-* TESTARE PQ,K-MEANS  E I VECCHI ALGORITMI CON LE NUOVE MODIFICHE
+* ~~Test PQ e nuovicentroidi~~
+
+* ~~TESTARE K-MEANS~~  
 
 * ANN esaustiva
   * distanza simmetrica o SDC(x,y): SQRT(Sommatoria(distanza(q(x),q(y))^2)), tenendo in memoria l'insieme di distanze tra ogni centroide
