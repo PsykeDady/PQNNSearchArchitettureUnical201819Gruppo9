@@ -50,8 +50,8 @@
 #include "utility.c"
 
 
-#define	MATRIX		double*
-#define	VECTOR		double*
+#define	MATRIX		float*
+#define	VECTOR		float*
 
 
 typedef struct {
@@ -114,7 +114,7 @@ void free_block(void* p) {
 
 
 MATRIX alloc_matrix(int rows, int cols) {
-	return (MATRIX) get_block(sizeof(double),rows*cols);
+	return (MATRIX) get_block(sizeof(float),rows*cols);
 }
 
 
@@ -132,8 +132,8 @@ void dealloc_matrix(MATRIX mat) {
  * 	e M colonne e la memorizza in un array lineare in row-major order
  * 
  * 	Codifica del file:
- * 	primi 4 byte: numero di righe (N) --> numero intero a 32 bit
- * 	successivi 4 byte: numero di colonne (M) --> numero intero a 32 bit
+ * 	primi 4 byte numero di colonne (M): --> numero intero a 32 bit
+ * 	successivi 4 byte: numero di righe (N)  --> numero intero a 32 bit
  * 	successivi N*M*4 byte: matrix data in row-major order --> numeri floating-point a precisione doppia
  * 
  *****************************************************************************
@@ -157,7 +157,7 @@ MATRIX load_data(char* filename, int *n, int *d) {
 	status = fread(&rows, sizeof(int), 1, fp);
 		
 	MATRIX data = alloc_matrix(rows,cols);
-	status = fread(data, sizeof(double), rows*cols, fp);
+	status = fread(data, sizeof(float), rows*cols, fp);
 	fclose(fp);
 	
 	*n = rows;

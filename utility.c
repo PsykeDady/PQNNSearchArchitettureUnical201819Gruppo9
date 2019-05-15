@@ -18,16 +18,20 @@
 #ifdef DEBUG
     //#define DEBUG_DIST
     //#define DEBUG_PRINTV
-    //#define DEBUG_PRINTM
+    //#define DEBUG_PRINTMF
+    //#define DEBUG_PRINTMI
     //#define DEBUG_COPYV
     //#define DEBUG_MINDIST
-    //#define DEBUG_VQ
     //#define DEBUG_INITCODEBOOK
+    //#define DEBUG_DISTQ
     //#define DEBUG_OBIETTIVO
     //#define DEBUG_EQUALS
-    //#define DEBUG_NUOVICENTROIDI
+    #define DEBUG_NUOVICENTROIDI
     //#define DEBUG_PQ
-    //#define DEBUG_KMEANS
+    #define DEBUG_KMEANS
+    //#define DEBUG_CINDEX
+    //#define DEBUG_ANNSDC
+    //#define DEBUG_SDC
     //#define DEBUG_MAIN
 #endif
 
@@ -49,37 +53,37 @@
  * A partire da xi e da yi vengono analizzati d elementi
  * 
  */
-double dist(int d, double *x, int xi, double *y, int yi){
+float dist(int d, float *x, int xi, float *y, int yi){
 
     #ifdef DEBUG_DIST 
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
     #endif
 
-    double somma=0, differenza=0;
+    float somma=0, differenza=0;
     for(int i=0;i<d;i++){
         differenza=x[xi+i]-y[yi+i];
         #ifdef DEBUG_DIST
-            printf("differenza %lf-%lf: %lf\n",x[xi+i],y[yi+i],differenza);
+            printf("differenza %f-%f: %f\n",x[xi+i],y[yi+i],differenza);
         #endif
         #ifdef DEBUG_DIST 
-            printf("al quadrato (%lf)^2=",differenza);
+            printf("al quadrato (%f)^2=",differenza);
         #endif
         differenza*=differenza;
         #ifdef DEBUG_DIST 
-            printf("%lf\n",differenza);
+            printf("%f\n",differenza);
         #endif
         #ifdef DEBUG_DIST
-            printf("somma parziale %lf+%lf=",somma,differenza);
+            printf("somma parziale %f+%f=",somma,differenza);
         #endif
         somma+=differenza;
         #ifdef DEBUG_DIST 
-            printf("%lf\n\n",somma);
+            printf("%f\n\n",somma);
         #endif
     }
 
     #ifdef DEBUG_DIST
-        printf("somma completa %lf\n",somma);
-        printf("con la radice %lf\n",sqrt(somma));
+        printf("somma completa %f\n",somma);
+        printf("con la radice %f\n",sqrt(somma));
     #endif
 
     #ifdef DEBUG_DIST 
@@ -97,16 +101,16 @@ double dist(int d, double *x, int xi, double *y, int yi){
  * descrizione:
  *  stampa d celle del vettore v passato come parametro a partire da vi
  */
-void printv(int d,double *v,int vi){
+void printv(int d,float *v,int vi){
     #ifdef DEBUG_PRINTV
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printv' #####\n");
     #endif
 
     printf("[");
     for(int i=0; i< d-1;i++){
-        printf("%lf,",v[vi+i]);
+        printf("%f,",v[vi+i]);
     }
-    printf("%lf",v[vi+d-1]);
+    printf("%f",v[vi+d-1]);
     printf("]\n");
 }
 
@@ -116,20 +120,42 @@ void printv(int d,double *v,int vi){
  *  - 'n' numero vettori
  *  - 'm' matrice da stampare
  * descrizione:
- *  stampa un intera matrice divisia in n vettori e ognuno di dimensione d
+ *  stampa un intera matrice di float divisia in n vettori e ognuno di dimensione d
  */
-void printm(int d, int n, double *m){
+void printmf(int d, int n, float *m){
     #ifdef PRINTM
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printm' #####\n");
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printmf' #####\n");
     #endif
     //printf("%05.1f\n", myVar);  // Total width 5, pad with 0, one digit after .
     int i=0,j=0;
     for(;i<n;i++){
         printf("|");
         for(j=0;j<d-1;j++){
-            printf("%+lf,",m[i*d+j]);
+            printf("%+f,",m[i*d+j]);
         }
-        printf("%+lf|\n",m[i*d+d-1]);
+        printf("%+f|\n",m[i*d+d-1]);
+    }
+}
+
+/**
+ * argomenti:
+ *  - 'd' dimensione di ogni vettore
+ *  - 'n' numero vettori
+ *  - 'm' matrice da stampare
+ * descrizione:
+ *  stampa un intera matrice di interi divisia in n vettori e ognuno di dimensione d
+ */
+void printmi(int d, int n, int *m){
+    #ifdef PRINTM
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printmi' #####\n");
+    #endif
+    int i=0,j=0;
+    for(;i<n;i++){
+        printf("|");
+        for(j=0;j<d-1;j++){
+            printf("%i,",m[i*d+j]);
+        }
+        printf("%i|\n",m[i*d+d-1]);
     }
 }
 
@@ -143,7 +169,7 @@ void printm(int d, int n, double *m){
  * descrizione: 
  *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
  */
-void copyv(int d, double* dest, int desti, double *src, int srci){
+void copyv(int d, float* dest, int desti, float *src, int srci){
     #ifdef DEBUG_COPYV
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'copyv' #####\n");
     #endif
@@ -167,7 +193,7 @@ void copyv(int d, double* dest, int desti, double *src, int srci){
  * 
  * Funziona sia con sottovettori che non, per non usare i sottovettori porre dstar=d e mi=0
  */
-int mindist(int d, int dstar, int mi, double *dataset, int di, int k, double* codebook){
+int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* codebook){
     #ifdef DEBUG_MINDIST
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'mindist' #####\n");
     #endif
@@ -211,41 +237,7 @@ int mindist(int d, int dstar, int mi, double *dataset, int di, int k, double* co
     return ris;
 }
 
-/**
- * argomenti:
- * -d=dimensione singoli vettori
- * -k=numero di centroidi
- * -n=dimensione dataset
- * -codebook=insieme centroidi
- * -dataset=insieme di punti 
- * 
- * descrizione:
- * -restituisce un insieme della cardinalita' del dataset*2 dove ad ogni punto viene associato il suo centroide (ogni valore viene diviso in una coppia quindi, punto-centroide), ogni centroide viene calcolato con la funzione di minima distanza (mindist)
- * TODO: obsoleto, può essere riscritto come pq con
- */
-/* double* vq(int d, int k, int n, double *codebook, double *dataset){
-    #ifdef DEBUG_VQ
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'vq' #####\n");
-    #endif
-    /* 
-    passi dell'algoritmo
-        - creare una struttura dataset=2*dataset
-        - prendi un elemento del dataset
-        - cercare il centroide (mindist)
-        -aggiungere al risultato dataset(i),centroide(dataset(i))
-    
-   int i,j;
-   double *res=(double*)malloc(sizeof(double) * n*2*d);
-   for(i=0;i<n;i++){
-       int icent=mindist(d,dataset,i*d,k,codebook);
-       for(j=0;j<d;j++){
-           res[(i*2*d)+j]=dataset[(i*d)+j];
-           res[(i*2*d)+d+j]=codebook[(icent*d)+j];
-        }
-   }
 
-   return res;
-} */
 
 /**
  * argomenti:
@@ -258,7 +250,7 @@ int mindist(int d, int dstar, int mi, double *dataset, int di, int k, double* co
  * descrizione:
  * -si riempie il codebook con valori random facenti parte dell'insieme di partenza
  */
-void init_codebook(int d, int n, double* dataset, int k, double* codebook){
+void init_codebook(int d, int n, float* dataset, int k, float* codebook){
     #ifdef DEBUG_INITCODEBOOK
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
     #endif
@@ -282,33 +274,62 @@ void init_codebook(int d, int n, double* dataset, int k, double* codebook){
 }
 
 /**
+ * args:
+ * -d=numero di elementi a vettore
+ * -m=numero di sottovettori
+ * -dataset=dataset
+ * -i=indice dataset
+ * -map=mappa dataset-centroide associato
+ * -codebook=insieme centroidi
+ * 
+ * desc:
+ * -calcola la distanza tra un punto e i suoi sottocentroidi
+ */
+float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
+    #ifdef DEBUG_DISTQ
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
+    #endif
+    int w,j,icent,dstar=d/m;
+    float distz=0,parz;
+    for(w=0; w<m;w++){
+        icent=map[i*m+w];
+        for(j=0; j<dstar;j++){
+            parz=(dataset[i*d+w*dstar+j]-codebook[icent*d+w*dstar+j]);
+            parz*=parz;
+            distz+=parz;
+        }
+    }
+    #ifdef DEBUG_DISTQ
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
+    #endif
+    return sqrt(distz);
+}
+
+/**
  * argomenti:
  *  - 'd' coordinate del singolo punto
- *  - 'n' numero di righe della map (quindi la map contiene n*d*2 elementi)
- *  - 'map' una matrice che contiene per ogni riga un punto del dataset e il relativo centroide
+ *  - 'n' numero di righe della map 
+ *  - 'map' una matrice che contiene per ogni riga l'indice del relativo centroide
  * 
  * descrizione:
  *  -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
  */
-double obiettivo(int d, int n, double* dataset, double *map){
+float obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook){
     #ifdef DEBUG_OBIETTIVO
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
     #endif
+
+ 
     int i;
-    double somma=0,parziale;
+    float somma=0,parziale;
     for(i=0;i<n;i++){
-        parziale=dist(d,dataset,i*d,map,i*d); 
-
-        /**
-         * for (w per tutti i sottovettori){
-         *      dist(dstar,w,dataset,i,codebook,map[i]);
-         * } POSSIBILE OTTIMIZZAZIONE
-         * 
-         */
-
+        parziale=dist_q(d, m, dataset,i,map,codebook);
         parziale*=parziale;
         somma+=parziale;
     }
+    #ifdef DEBUG_OBIETTIVO
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
+    #endif
     return somma;
 }
 
@@ -325,7 +346,7 @@ double obiettivo(int d, int n, double* dataset, double *map){
  * - verifica se due vettori x e y, a partire ognuno da un certo indice indicato (xi/yi rispettivamente), sono uguali per ogni elemento
  * restituisce 1 se sono uguali, 0 se sono diversi
  */
-int equals(int d, double *x, int xi, double *y, int yi){
+int equals(int d, float *x, int xi, float *y, int yi){
     #ifdef DEBUG_EQUALS
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'equals' #####\n");
     #endif
@@ -350,8 +371,13 @@ int equals(int d, double *x, int xi, double *y, int yi){
  * descrizione:
  * - genera un set di nuovi centroidi calcolando la media degli elementi che gli sono associati
  */
-void nuovicentroidi (int d, int m, int n, double* dataset, double* map, int k, double* codebook){
+void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float* codebook){
 
+    #ifdef DEBUG_NUOVICENTROIDI
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'nuovicentroidi' #####\n");
+    #endif
+
+    
     /*
      * - per ogni sottovettore del codebook, comparare un sotto vettore della mappa
      * - se uguali sommali al nuovo codebook il dataset in indice corrispondete, aumenta contatore
@@ -359,29 +385,52 @@ void nuovicentroidi (int d, int m, int n, double* dataset, double* map, int k, d
      * -cambia sottovettore
      * 
      */
-    int i,z,w,c,j,dstar=d/m;
-    double*nc;
-    nc=(double*)(malloc(sizeof(double)*d));
+    int i,icent,z,w,c,j,dstar=d/m;
+    float*nc;
+    nc=(float*)(malloc(sizeof(float)*d));
 
     for( i=0; i<k; i++){ // per ogni centroide
+        #ifdef DEBUG_NUOVICENTROIDI
+            printf("analisi centroide i=%i\n",i);
+        #endif
         for(z=0;z<d;z++){
             nc[z]=0;
         }
         for (w=0; w<m; w++){ // per ogni sottocentroide
+        #ifdef DEBUG_NUOVICENTROIDI
+            printf("in analisi sottocentroide w=%i\n",w);
+        #endif
             c=0;
             for(j=0;j<n;j++){ // per ogni elemento della mappa
-                if (equals(dstar,codebook,d*i+w*dstar,map,d*j+w*dstar)){
+                icent=map[m*j+w];
+                #ifdef DEBUG_NUOVICENTROIDI
+                    printf("in analisi elemento della mappa j=%i\ncon valore di c=%i\nicent=%i\n",j,c,icent);
+                #endif
+                if (icent==i){
+                    #ifdef DEBUG_NUOVICENTROIDI
+                        printf("WOW icent e' uguale ad i, %i=%i\n",icent,i);
+                    #endif
                     for(z=0;z<dstar;z++){
                         nc[w*dstar+z]+=dataset[j*d+w*dstar+z];
                     }
                     c++;
+                    #ifdef DEBUG_NUOVICENTROIDI
+                        printf("nc dopo la somma parziale= ");
+                        printv(d,nc,0);
+                        printf("c aggioranto: %i\n",c);
+                    #endif
                 }
             }
             for(z=0;z<dstar;z++){
+                //possibile mettere sotto?
                 codebook[i*d+w*dstar+z]=nc[w*dstar+z]/c;
-            }
-        }
-    }
+            }//z
+        }//w
+    }//i
+
+    #ifdef DEBUG_NUOVICENTROIDI
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'nuovicentroidi' #####\n");
+    #endif
 
 }
 
@@ -402,7 +451,7 @@ void nuovicentroidi (int d, int m, int n, double* dataset, double* map, int k, d
  *  - si può restituire la mappa come raccolta di indici del codebook
  * 
  */
-double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
+int* pq(int d, int m, int k, float *codebook, int n, float *dataset){
     #ifdef DEBUG_PQ
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'pq' #####\n");
     #endif
@@ -415,11 +464,13 @@ double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
         - per ogni sottovettore, si cerca un sottocentroide (mindist) più vicino
         -trovati gli m sottovettori, vanno concatenati per ottenere la quantizzazione del vettore
         -aggiungere al risultato dataset(i),centroide(dataset(i))
+
+        TODO passare mappa da aggiornare, non creare qua
     */
 
    int dstar=d/m; //numero elementi sottovettori
     int i,j,w;
-    double *res=(double*)malloc(sizeof(double) * n*d);
+    int *map=(int*)malloc(sizeof(int) * n*m);
     for(i=0;i<n;i++){ // indice di riga
         #ifdef DEBUG_PQ
             printf("riga dataset:%i\n",i);
@@ -433,22 +484,20 @@ double* pq(int d, int m, int k, double *codebook, int n, double *dataset){
                 printf("centroide scelto: %i\n\n",icent);
             #endif 
             //sappiamo  l'indice di codebook del punto più vicino  al sottovettore 
-            int mi=w*dstar; 
-            for(j=0;j<dstar;j++){
-                res[i*d+mi+j]=codebook[icent*d+mi+j];
-            }//j
+            map[i*m+w]=icent;
+            
         }//w
        
    }//i
 
-   return res;
+   return map;
 }
 
 
 
 
 
-void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebook, int n, double* dataset){
+void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codebook, int n, float* dataset){
 
     #ifdef DEBUG_KMEANS
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'kmeans' #####\n");
@@ -463,73 +512,167 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, double* codebo
      6- goto 2
     */
 
-    double tmp=0;
+    float tmp=0;
     int t=0;
-    double delta=0;
+    float delta=0;
     
-    double ob=0; 
-    double nuovo_ob=0;
-    double * res;
+    float ob=0; 
+    float nuovo_ob=0;
+    int * map;
 
     do{
-        res=pq(d,m,k,codebook,n,dataset);
+        map=pq(d,m,k,codebook,n,dataset);
         #ifdef DEBUG_KMEANS
-            printf("stampa RES al passo t=%i\n",t);
-            printm(d,n,res);
+            printf("stampa MAP al passo t=%i\n",t);
+            printmi(m,n,map);
             printf("\n");
         #endif
-        nuovicentroidi(d,m,n,dataset,res,k,codebook); 
+        nuovicentroidi(d,m,n,dataset,map,k,codebook); 
         #ifdef DEBUG_KMEANS
             printf("stampa centroidi al passo t=%i\n",t+1);
-            printm(d,k,codebook);
+            printmf(d,k,codebook);
             printf("\n");
         #endif
     }while(t++<tmin-1);
-    ob=obiettivo(d,n,dataset,res);
+    ob=obiettivo(d,m,n,dataset,map,codebook);
     //l'ultima volta il ciclo lo facciamo al di fuori del while
-    res=pq(d,m,k,codebook,n,dataset);
+    map=pq(d,m,k,codebook,n,dataset);
     #ifdef DEBUG_KMEANS
         printf("stampa RES al passo t=%i\n",t);
-        printm(d,n,res);
+        printmi(m,n,map);
         printf("\n");
     #endif
-    nuovo_ob=obiettivo(d,n,dataset,res);
+    nuovo_ob=obiettivo(d,m,n,dataset,map,codebook);
     #ifdef DEBUG_KMEANS
-        printf("stampa obiettivo passo t=%i\nob=%lf\n",t,nuovo_ob);
+        printf("stampa obiettivo passo t=%i\nob=%f\n",t,nuovo_ob);
     #endif
     t++;
     delta=ob-nuovo_ob;
         
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps ){
-        nuovicentroidi(d,m,n,dataset,res,k,codebook); 
+        nuovicentroidi(d,m,n,dataset,map,k,codebook); 
         #ifdef DEBUG_KMEANS
             printf("stampa centroidi al passo t=%i\n",t-1);
-            printm(d,k,codebook);
+            printmf(d,k,codebook);
             printf("\n");
         #endif
-        res=pq(d,m,k,codebook,n,dataset);
+        map=pq(d,m,k,codebook,n,dataset);
         #ifdef DEBUG_KMEANS
             printf("stampa RES al passo t=%i\n",t-1);
-            printm(d,n,res);
+            printmi(m,n,map);
             printf("\n");
         #endif
-        nuovo_ob= obiettivo(d,n,dataset,res);
+        nuovo_ob= obiettivo(d,m,n,dataset,map,codebook);
         #ifdef DEBUG_KMEANS
-            printf("stampa obiettivo passo t=%i\nob=%lf\n",t-1,nuovo_ob);
+            printf("stampa obiettivo passo t=%i\nob=%f\n",t-1,nuovo_ob);
         #endif
         delta =ob-nuovo_ob;
         ob=nuovo_ob;
     }
 
-    free(res);
+    free(map);
 
+}
+
+
+
+
+int cindex(int i,int j,int k){
+    int index=0;
+    for(int c=0;c<i;c++){
+        index+=k-c-1;
+    }
+
+    return index+(j-i-1);
+}
+
+
+/**
+ * args:
+ * -d= dimensione del vettore
+ * -m=numero di sottovettori
+ * -k=numero centroidi
+ * -codebook=centroidi
+ * -K=numero elementi in ANN
+ * -ANN=risultati (set già inizializzato)
+ * -n=numero di elementi nel dataset
+ * -map=dataset
+ * -qs: struttura con punti query
+ * 
+ * descrizione:
+ * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
+ */
+void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map, float*qs){
+    /*
+     * -calcolare tutte le distanze tra centroidi
+     * -per ogni punto query calcolare gli ANN con SDC
+     */
+    int dstar=d/m;
+    int nrd=((k-1)*(k))/2;
+    int ncd=m+2;
+    int c=0;
+    /**
+     * 
+     * 
+     */
+    float*distanze=(float*)(malloc(sizeof(float)*(nrd*(ncd))));
+
+    for( int i=0; i<k;i++){
+        //centroide i
+        for( int j=i+1;j<k;j++){
+            //centroide j
+            for(int w=0;w<m;w++){
+                distanze[c++]=dist(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar);
+            }
+            distanze[c++]=i;
+            distanze[c++]=j;
+        }
+    }
+}
+
+/**
+ * args:
+ * -d= dimensione del vettore
+ * -m=numero di sottovettori
+ * -nd=numero distanze
+ * -distanze=distanze tra tutti i punti del codebook
+ * -K=numero elementi in ANN
+ * -ANN=risultati (set già inizializzato)
+ * -n=numero di elementi nel dataset
+ * -map=dataset
+ * -x=punto di query (indice di qs)
+ * -qs: struttura con punti query
+ * 
+ * descrizione:
+ * implementa la distanza simmetrica con un singolo punto
+ */
+void SDC (int d, int m, int nrd, float* distanze, int K, int*ANN, int n, int* map, int x, float*qs){
+    #ifdef DEBUG_SDC
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
+    #endif
+
+    /*
+     * passi:
+     * 
+     * -calcolare i centroidi di x
+     * -calcolare insieme distanze 
+     * -per ogni centroide in map, calcolare la distanza euclidea tra un sottocentroide e un altro come:
+     * --radice(somma( distanza(qx,qy)^2 ))
+     * --confrontare con minore distanza attualmente calcolata 
+     * -restituire i risultati 
+     * 
+     */
+
+    #ifdef DEBUG_SDC
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
+    #endif
 }
 
 
 int main (char*args, int argv){
 
-    //#define MANUALE
+    #define MANUALE
 
 
     /**dimensione dei singoli punti (vettori)*/
@@ -537,21 +680,21 @@ int main (char*args, int argv){
     /**numero di sottovettori*/
     int m=2;
     /** il data set */
-    double *dataset;
+    float *dataset;
     /** la dimensione n del dataset*/
     int n=6;
     /**codebook*/
-    double *codebook;
+    float *codebook;
     /**la dimensione k del codebook*/
-    int k=3;
+    int k=1;
 
     /**variabili temporanee*/
     int j;
     int i;
-    double *res;
+    int *map;
 
     /** parametri di kmeans */
-    double eps=0.01;
+    float eps=0.01;
     int tmin=10;
     int tmax=100;
 
@@ -560,7 +703,7 @@ int main (char*args, int argv){
     #ifdef MANUALE
        
 
-        double ds[]= {
+        float ds[]= {
             -3,2,5,7,
             9,-10,1,0,
             4,-2,3,-5,
@@ -569,7 +712,7 @@ int main (char*args, int argv){
             0,3,0,-3
         },
         cb[]={
-            1,-4,-1,3,
+            4,-2,3,-5,
         };
 
         dataset=ds;
@@ -589,8 +732,8 @@ int main (char*args, int argv){
     scanf("%i",&k);
     
 
-    dataset= (double*) malloc(d*n*sizeof(double));
-    codebook=(double*)malloc(k*d*sizeof(double));
+    dataset= (float*) malloc(d*n*sizeof(float));
+    codebook=(float*)malloc(k*d*sizeof(float));
 
     
     printf("Riempiamo il set di punti\n");
@@ -598,18 +741,18 @@ int main (char*args, int argv){
         printf("\n\npunto numero %i:\n",i);
         for(j=0;j<d;j++){
             printf("dai un numero dataset:> ");
-            scanf("%lf",&dataset[i*d+j]);
+            scanf("%f",&dataset[i*d+j]);
         }
     }
     #endif
     printf("riepilogando hai inserito dataset:\n"); 
-    printm(d,n,dataset);
+    printmf(d,n,dataset);
 
     //#ifndef MANUALE
 
     printf("creando il codebook...\n");
     init_codebook(d,n,dataset,k,codebook);
-    printm(d,k,codebook);
+    printmf(d,k,codebook);
     //#endif
 
     printf("#### IMPOSTAZIONI PARAMETRI DI KMEANS ####\n");
@@ -623,18 +766,18 @@ int main (char*args, int argv){
     /*
     printf("applicando product quantization\n");
 
-    res=pq(d,m,k,codebook,n,dataset);
+    map=pq(d,m,k,codebook,n,dataset);
 
     printf("ecco il risultato. Res:\n");
-    printm(d,n,res);
+    printmi(m,n,map);
 
     printf("testando il metodo nuovi centroidi...\n");
-    nuovicentroidi( d,m,n,dataset,res,k,codebook);
+    nuovicentroidi( d,m,n,dataset,map,k,codebook);
     */
 
     #ifndef MANUALE
-    printf("inserisci eps(double):>");
-    scanf("%lf",&eps);
+    printf("inserisci eps(float):>");
+    scanf("%f",&eps);
 
     printf("inserisci tmin:>");
     scanf("%i",&tmin);
@@ -648,24 +791,12 @@ int main (char*args, int argv){
     printf("applicando k-means per trovare i migliori centroidi\n");
     k_means(d,m,eps,tmin,tmax,k,codebook,n,dataset); 
 
-    /* res=vq(d,k,n,codebook,dataset);
-    printf("ordunque il tuo res è uscito:\n");
-    printm(2*d,n,res);
-
-    printf("calcolando nuovi centroidi...\n");
-    nuovicentroidi(d,m,n,dataset,res,k,codebook);
-
-    printf("ecco i nuovi centroidi che sono usciti:\n");
-    printv(d*k,codebook,0); */
-
     printf("ecco il risultato. Nuovi Centroidi:\n");
-    printm(d,k,codebook);
+    printmf(d,k,codebook);
 
 
     #ifndef MANUALE
     free(dataset);
     free(codebook);
     #endif
-    //free(res);
 }
-
