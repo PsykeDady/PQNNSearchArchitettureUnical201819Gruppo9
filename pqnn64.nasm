@@ -1,5 +1,5 @@
 ; ---------------------------------------------------------
-; PQNN con istruzioni SSE a 32 bit
+; PQNN con istruzioni AVX a 64 bit
 ; ---------------------------------------------------------
 ; F. Angiulli
 ; Aprile 2019
@@ -25,7 +25,7 @@
 ;
 ; Per generare file oggetto:
 ;
-;     nasm -f elf64 pqnn32.nasm 
+;     nasm -f elf64 pqnn64.nasm 
 ;
 
 %include "sseutils64.nasm"

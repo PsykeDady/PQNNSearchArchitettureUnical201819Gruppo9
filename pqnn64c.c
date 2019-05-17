@@ -197,7 +197,14 @@ void pqnn_index(params* input) {
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
     
+
+	MATRIX codebook=alloc_matrix(input->k,input->d);
+	
+	init_codebook(input->d,input->n,input->ds,input->k,codebook);
+	
     //pqnn64_index(input); // Chiamata funzione assembly
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,codebook,input->n,input->ds);
+
 
     // -------------------------------------------------
 
@@ -225,6 +232,9 @@ void pqnn_search(params* input) {
 
 
 int main(int argc, char** argv) {
+
+	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
+	srand(time(NULL));
 	
 	char fname[256];
 	int i, j;

@@ -16,6 +16,7 @@
  * lista di flag di debug, commentare/decommentare singolo flag per disabilitare/abilitare le stampe di debug del relativo metodo
  */
 #ifdef DEBUG
+    //#define DEBUG_DIST2
     //#define DEBUG_DIST
     //#define DEBUG_PRINTV
     //#define DEBUG_PRINTMF
@@ -26,7 +27,7 @@
     //#define DEBUG_DISTQ
     //#define DEBUG_OBIETTIVO
     //#define DEBUG_EQUALS
-    #define DEBUG_NUOVICENTROIDI
+    //#define DEBUG_NUOVICENTROIDI
     //#define DEBUG_PQ
     #define DEBUG_KMEANS
     //#define DEBUG_CINDEX
@@ -39,6 +40,58 @@
 /* #ifdef DEBUG_
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO '' #####\n");
 #endif */
+
+/**
+ * argomenti:
+ *  - 'd' dimensione elementi 
+ *  - 'x' matrice di vettori in Rd
+ *  - 'xi' indice iniziale di x
+ *  - 'y' matrice di vettori in Rd
+ *  - 'yi' indice iniziale di y 
+ * descrizione:
+ *  calcola la distanza euclidea al quadrato tra un punto di x (segnato a partire da xi) e un punto di y (segnato a partire da yi).
+ * A partire da xi e da yi vengono analizzati d elementi
+ * 
+ */
+float dist_2(int d, float *x, int xi, float *y, int yi){
+    
+    #ifdef DEBUG_DIST2
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist2' #####\n");
+    #endif
+
+    float somma=0, differenza=0;
+    for(int i=0;i<d;i++){
+        differenza=x[xi+i]-y[yi+i];
+        #ifdef DEBUG_DIST2
+            printf("differenza %f-%f: %f\n",x[xi+i],y[yi+i],differenza);
+        #endif
+        #ifdef DEBUG_DIST2
+            printf("al quadrato (%f)^2=",differenza);
+        #endif
+        differenza*=differenza;
+        #ifdef DEBUG_DIST2
+            printf("%f\n",differenza);
+        #endif
+        #ifdef DEBUG_DIST2
+            printf("somma parziale %f+%f=",somma,differenza);
+        #endif
+        somma+=differenza;
+        #ifdef DEBUG_DIST2
+            printf("%f\n\n",somma);
+        #endif
+    }
+
+    #ifdef DEBUG_DIST2
+        printf("somma completa %f\n",somma);
+        printf("con la radice %f\n",sqrt(somma));
+    #endif
+
+    #ifdef DEBUG_DIST2
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
+    #endif
+
+    return somma;
+}
 
 
 /**
@@ -54,43 +107,8 @@
  * 
  */
 float dist(int d, float *x, int xi, float *y, int yi){
-
-    #ifdef DEBUG_DIST 
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
-    #endif
-
-    float somma=0, differenza=0;
-    for(int i=0;i<d;i++){
-        differenza=x[xi+i]-y[yi+i];
-        #ifdef DEBUG_DIST
-            printf("differenza %f-%f: %f\n",x[xi+i],y[yi+i],differenza);
-        #endif
-        #ifdef DEBUG_DIST 
-            printf("al quadrato (%f)^2=",differenza);
-        #endif
-        differenza*=differenza;
-        #ifdef DEBUG_DIST 
-            printf("%f\n",differenza);
-        #endif
-        #ifdef DEBUG_DIST
-            printf("somma parziale %f+%f=",somma,differenza);
-        #endif
-        somma+=differenza;
-        #ifdef DEBUG_DIST 
-            printf("%f\n\n",somma);
-        #endif
-    }
-
-    #ifdef DEBUG_DIST
-        printf("somma completa %f\n",somma);
-        printf("con la radice %f\n",sqrt(somma));
-    #endif
-
-    #ifdef DEBUG_DIST 
-        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
-    #endif
-
-    return sqrt(somma);
+    float dista=dist_2(d,x,xi,y,yi);
+    return sqrt(dista);
 }
 
 /**
@@ -254,23 +272,51 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
     #ifdef DEBUG_INITCODEBOOK
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
     #endif
+
+    #ifdef DEBUG_INITCODEBOOK
+        printf("Ecco il dataset di dimensione %i passato:\n",n);
+        printmf(d,n,dataset);
+    #endif
+
+
     int i=0,j=0,flag=1,r=0;
+    #ifdef DEBUG_INITCODEBOOK
+        printf("numero di elementi da creare:%i\n\n",k);
+    #endif
     int *rp=(int*)malloc(sizeof(int)*k);
 
     for(;i<k;i++){        
         do{
             flag=1;
-            r= (int)(rand()%n); 
+            r= (int)(rand()%n);
+            #ifdef DEBUG_INITCODEBOOK
+                printf("ecco l'indice generato: %i\n",r);
+            #endif 
             for(j=0;j<i;j++) {
                 if(r==rp[j])
                 {
+                    #ifdef DEBUG_INITCODEBOOK
+                        printf("ATTENZIONE INDICE GIA' PRESENTE!!\n\n");
+                    #endif 
                     flag=0;
                 }
             }//for j
         }while(flag==0); //do flag
         rp[i]=r;
         copyv(d,codebook,i,dataset,r);
+        #ifdef DEBUG_INITCODEBOOK
+            printf("\n\n");
+        #endif
     }//for i
+
+    #ifdef DEBUG_INITCODEBOOK
+        printf("stampiamo ora il codebook risultato\n");
+        printmf(d,k,codebook);
+    #endif
+
+    #ifdef DEBUG_INITCODEBOOK
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
+    #endif
 }
 
 /**
@@ -283,7 +329,7 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
  * -codebook=insieme centroidi
  * 
  * desc:
- * -calcola la distanza tra un punto e i suoi sottocentroidi
+ * -calcola la distanza al quadrato tra un punto e i suoi sottocentroidi
  */
 float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
     #ifdef DEBUG_DISTQ
@@ -302,7 +348,7 @@ float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
     #ifdef DEBUG_DISTQ
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
     #endif
-    return sqrt(distz);
+    return distz;
 }
 
 /**
@@ -314,17 +360,16 @@ float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
  * descrizione:
  *  -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
  */
-float obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook){
+double obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook){
     #ifdef DEBUG_OBIETTIVO
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
     #endif
 
  
     int i;
-    float somma=0,parziale;
+    double somma=0,parziale;
     for(i=0;i<n;i++){
         parziale=dist_q(d, m, dataset,i,map,codebook);
-        parziale*=parziale;
         somma+=parziale;
     }
     #ifdef DEBUG_OBIETTIVO
@@ -471,7 +516,7 @@ int* pq(int d, int m, int k, float *codebook, int n, float *dataset){
    int dstar=d/m; //numero elementi sottovettori
     int i,j,w;
     int *map=(int*)malloc(sizeof(int) * n*m);
-    for(i=0;i<n;i++){ // indice di riga
+    for(i=0;i<n;i++){ // indice di riga del ds
         #ifdef DEBUG_PQ
             printf("riga dataset:%i\n",i);
         #endif 
@@ -516,8 +561,8 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
     int t=0;
     float delta=0;
     
-    float ob=0; 
-    float nuovo_ob=0;
+    double ob=0; 
+    double nuovo_ob=0;
     int * map;
 
     do{
@@ -547,7 +592,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
         printf("stampa obiettivo passo t=%i\nob=%f\n",t,nuovo_ob);
     #endif
     t++;
-    delta=ob-nuovo_ob;
+    delta=(float)(ob-nuovo_ob);
         
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps ){
@@ -567,7 +612,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
         #ifdef DEBUG_KMEANS
             printf("stampa obiettivo passo t=%i\nob=%f\n",t-1,nuovo_ob);
         #endif
-        delta =ob-nuovo_ob;
+        delta=(float)(ob-nuovo_ob);
         ob=nuovo_ob;
     }
 
@@ -577,7 +622,16 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
 
 
 
-
+/**
+ * args:
+ * -i : indice primo centroide
+ * -j :  indice secondo centroide
+ * -k : numero di centroidi
+ * 
+ * descrizione:
+ * -tirava fuori l'indice di riga della struttura che accoppia a due centroidi la loro distanza
+ * 
+ */ 
 int cindex(int i,int j,int k){
     int index=0;
     for(int c=0;c<i;c++){
@@ -587,6 +641,61 @@ int cindex(int i,int j,int k){
     return index+(j-i-1);
 }
 
+/**
+ * args:
+ * -d= dimensione del vettore
+ * -m=numero di sottovettori
+ * -nd=numero distanze
+ * -distanze=distanze tra tutti i punti del codebook
+ * -K=numero elementi in ANN
+ * -ANN=risultati (set già inizializzato)
+ * -n=numero di elementi nel dataset
+ * -map=dataset
+ * -ix= indice del punto query, per memorizzarlo in ANN
+ * -icent=il punto query quantizzato (contiene una lista di indici a cui è associato il centroide corrispondente)
+ * 
+ * descrizione:
+ * implementa la distanza simmetrica con un singolo punto
+ */
+void SDC (int d, int k, int m, int nrd, float* distanze, int K, int*ANN, int n, int* map, int ix, int *qx){
+    #ifdef DEBUG_SDC
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
+    #endif
+
+    /*
+     * passi:
+     * 
+     * -calcolare i centroidi di x
+     * -calcolare insieme distanze 
+     * -per ogni centroide in map, calcolare la distanza euclidea tra un sottocentroide e un altro come:
+     * --radice(somma( distanza(qx,qy)^2 ))
+     * --confrontare con minore distanza attualmente calcolata 
+     * -restituire i risultati 
+     * 
+     */
+   
+    int j,w,z=0,idist;
+    double sommaparz=0;
+
+    double ANN_values[K]; //valori del singolo punto;
+
+    //abbiamo i centroidi associati al punto, adesso dobbiamo prendere per ogni punto un centroide e vedere se è il punto vicino 
+    for(j=0;j<K;j++){
+        //i primi K passi riempiamo il suo rispettivo ANN
+       for(w=0;w<m;w++){
+            idist=cindex(ix,j,k);
+            sommaparz+=distanze[idist*m+w];
+       }
+       ANN[idist*K+j]=j;
+       ANN_values[j]=sqrt(sommaparz);
+
+       //TODO RIPRENDERE DA QUI, DOPO CHE ABBIAMO FINITO DI RIEMPIRE KGRANDE VALORI DOBBIAMO INIZIARE CON GLI ALTRI CERCANDO SEMPRE QUELLO MINORE
+    }
+
+    #ifdef DEBUG_SDC
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
+    #endif
+}
 
 /**
  * args:
@@ -603,74 +712,45 @@ int cindex(int i,int j,int k){
  * descrizione:
  * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
  */
-void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map, float*qs){
+void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map, int nq, float*qs){
     /*
      * -calcolare tutte le distanze tra centroidi
      * -per ogni punto query calcolare gli ANN con SDC
      */
     int dstar=d/m;
     int nrd=((k-1)*(k))/2;
-    int ncd=m+2;
-    int c=0;
+    int ncd=m;
+    int c=0,i,j,w;
+    int* icent[m];
     /**
-     * 
+     * la matrice distanze e' una matrice che per ogni riga contiene m distanze
      * 
      */
-    float*distanze=(float*)(malloc(sizeof(float)*(nrd*(ncd))));
+    double distanze[nrd*ncd];
 
-    for( int i=0; i<k;i++){
+    for( i=0; i<k;i++){
         //centroide i
-        for( int j=i+1;j<k;j++){
+        for( j=i+1;j<k;j++){
             //centroide j
-            for(int w=0;w<m;w++){
-                distanze[c++]=dist(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar);
-            }
-            distanze[c++]=i;
-            distanze[c++]=j;
+            for(w=0;w<m;w++){
+                distanze[c]=(double)(dist_2(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar)); //distanze al quadrato
+            }//w
+        }//j
+    }//i
+
+    
+    for(i=0;i<nq;i++){
+        for(int w=0; w<m;w++){
+            icent[w]=mindist(d,dstar,w,qs,i,k,codebook);
         }
+        SDC(d,k,m,nrd,distanze,K,ANN,n,map,i,icent);
     }
-}
 
-/**
- * args:
- * -d= dimensione del vettore
- * -m=numero di sottovettori
- * -nd=numero distanze
- * -distanze=distanze tra tutti i punti del codebook
- * -K=numero elementi in ANN
- * -ANN=risultati (set già inizializzato)
- * -n=numero di elementi nel dataset
- * -map=dataset
- * -x=punto di query (indice di qs)
- * -qs: struttura con punti query
- * 
- * descrizione:
- * implementa la distanza simmetrica con un singolo punto
- */
-void SDC (int d, int m, int nrd, float* distanze, int K, int*ANN, int n, int* map, int x, float*qs){
-    #ifdef DEBUG_SDC
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
-    #endif
-
-    /*
-     * passi:
-     * 
-     * -calcolare i centroidi di x
-     * -calcolare insieme distanze 
-     * -per ogni centroide in map, calcolare la distanza euclidea tra un sottocentroide e un altro come:
-     * --radice(somma( distanza(qx,qy)^2 ))
-     * --confrontare con minore distanza attualmente calcolata 
-     * -restituire i risultati 
-     * 
-     */
-
-    #ifdef DEBUG_SDC
-        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
-    #endif
-}
+}//ANNSDC
 
 
-int main (char*args, int argv){
+
+int mainPATATE (int argv,char*args){
 
     #define MANUALE
 
@@ -686,7 +766,7 @@ int main (char*args, int argv){
     /**codebook*/
     float *codebook;
     /**la dimensione k del codebook*/
-    int k=1;
+    int k=6;
 
     /**variabili temporanee*/
     int j;
@@ -712,7 +792,12 @@ int main (char*args, int argv){
             0,3,0,-3
         },
         cb[]={
+            -3,2,5,7,
+            9,-10,1,0,
             4,-2,3,-5,
+            1,-4,-1,3,
+            -0.5,1,5,-3,
+            0,3,0,-3
         };
 
         dataset=ds;

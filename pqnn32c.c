@@ -196,8 +196,11 @@ void pqnn_index(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
-    
-    pqnn32_index(input); // Chiamata funzione assembly
+    MATRIX codebook=alloc_matrix(input->k,input->d);
+	
+	init_codebook(input->d,input->n,input->ds,input->k,codebook);
+    //pqnn32_index(input); // Chiamata funzione assembly TODO
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,codebook,input->n,input->ds);
 
     // -------------------------------------------------
 
@@ -218,7 +221,8 @@ void pqnn_search(params* input) {
     // Codificare qui l'algoritmo di interrogazione
     // -------------------------------------------------
     
-    pqnn32_search(input); // Chiamata funzione assembly
+    //pqnn32_search(input); // Chiamata funzione assembly
+	printf("funzione in via di sviluppo \n");
 	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
@@ -230,6 +234,8 @@ void pqnn_search(params* input) {
 
 
 int main(int argc, char** argv) {
+	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
+	srand(time(NULL));
 	
 	char fname[256];
 	int i, j;
