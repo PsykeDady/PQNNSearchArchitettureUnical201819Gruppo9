@@ -16,11 +16,9 @@
  * lista di flag di debug, commentare/decommentare singolo flag per disabilitare/abilitare le stampe di debug del relativo metodo
  */
 #ifdef DEBUG
+    #include "printutility.c"
     //#define DEBUG_DIST2
     //#define DEBUG_DIST
-    //#define DEBUG_PRINTV
-    //#define DEBUG_PRINTMF
-    //#define DEBUG_PRINTMI
     //#define DEBUG_COPYV
     //#define DEBUG_MINDIST
     //#define DEBUG_INITCODEBOOK
@@ -29,11 +27,12 @@
     //#define DEBUG_EQUALS
     //#define DEBUG_NUOVICENTROIDI
     //#define DEBUG_PQ
-    #define DEBUG_KMEANS
+    //#define DEBUG_KMEANS
     //#define DEBUG_CINDEX
-    //#define DEBUG_ANNSDC
-    //#define DEBUG_SDC
-    //#define DEBUG_MAIN
+    //#define DEBUG_MERGE
+    //#define DEBUG_MERGESORT
+    #define DEBUG_SDC
+    #define DEBUG_ANNSDC
 #endif
 
 //template debug da incollare ogni metodo:
@@ -111,71 +110,12 @@ float dist(int d, float *x, int xi, float *y, int yi){
     return sqrt(dista);
 }
 
-/**
- * argomenti:
- *  - 'd' numero di celle da stampare
- *  - 'v' vettore da cui prelevare le celle
- *  - 'vi' indice iniziale di v ( non sarà moltiplicato)
- * descrizione:
- *  stampa d celle del vettore v passato come parametro a partire da vi
- */
-void printv(int d,float *v,int vi){
-    #ifdef DEBUG_PRINTV
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printv' #####\n");
-    #endif
 
-    printf("[");
-    for(int i=0; i< d-1;i++){
-        printf("%f,",v[vi+i]);
-    }
-    printf("%f",v[vi+d-1]);
-    printf("]\n");
-}
 
-/**
- * argomenti:
- *  - 'd' dimensione di ogni vettore
- *  - 'n' numero vettori
- *  - 'm' matrice da stampare
- * descrizione:
- *  stampa un intera matrice di float divisia in n vettori e ognuno di dimensione d
- */
-void printmf(int d, int n, float *m){
-    #ifdef PRINTM
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printmf' #####\n");
-    #endif
-    //printf("%05.1f\n", myVar);  // Total width 5, pad with 0, one digit after .
-    int i=0,j=0;
-    for(;i<n;i++){
-        printf("|");
-        for(j=0;j<d-1;j++){
-            printf("%+f,",m[i*d+j]);
-        }
-        printf("%+f|\n",m[i*d+d-1]);
-    }
-}
 
-/**
- * argomenti:
- *  - 'd' dimensione di ogni vettore
- *  - 'n' numero vettori
- *  - 'm' matrice da stampare
- * descrizione:
- *  stampa un intera matrice di interi divisia in n vettori e ognuno di dimensione d
- */
-void printmi(int d, int n, int *m){
-    #ifdef PRINTM
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'printmi' #####\n");
-    #endif
-    int i=0,j=0;
-    for(;i<n;i++){
-        printf("|");
-        for(j=0;j<d-1;j++){
-            printf("%i,",m[i*d+j]);
-        }
-        printf("%i|\n",m[i*d+d-1]);
-    }
-}
+
+
+
 
 /**
  * argomenti:
@@ -218,7 +158,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
 
     #ifdef DEBUG_MINDIST
         printf("punto dataset preso in carico(pt%i):\n",mi+1);
-        printv(dstar,dataset,di*d+mi*dstar);
+        printfv(dstar,dataset,di*d+mi*dstar);
         printf("\n");
     #endif
     int i,ris=0, j=di*d+mi*dstar;
@@ -230,7 +170,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
     mind=dist(dstar,dataset,j,codebook,mi*dstar);
     #ifdef DEBUG_MINDIST
         printf("centroide 0 (indice %i) preso in carico:\n",mi*dstar);
-        printv(dstar,codebook,mi*dstar);
+        printfv(dstar,codebook,mi*dstar);
         printf("\n");
         printf("distanza=%f\n",mind);
     #endif
@@ -239,7 +179,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
         ndist=dist(dstar,dataset,j,codebook,d*i+mi*dstar);
         #ifdef DEBUG_MINDIST
             printf("centroide %i (indice %i) preso in carico:\n",i,d*i+mi*dstar);
-            printv(dstar,codebook,d*i+mi*dstar);
+            printfv(dstar,codebook,d*i+mi*dstar);
             printf("\n");
             printf("distanza=%f\n",ndist);
         #endif
@@ -461,7 +401,7 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
                     c++;
                     #ifdef DEBUG_NUOVICENTROIDI
                         printf("nc dopo la somma parziale= ");
-                        printv(d,nc,0);
+                        printfv(d,nc,0);
                         printf("c aggioranto: %i\n",c);
                     #endif
                 }
@@ -633,12 +573,128 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
  * 
  */ 
 int cindex(int i,int j,int k){
+
+    if(j<i){
+        int tmp=i;
+        i=j;
+        j=tmp;
+    }
+
     int index=0;
     for(int c=0;c<i;c++){
         index+=k-c-1;
     }
 
     return index+(j-i-1);
+}
+
+void merge(double* values, int* indices, int start, int mean, int end, int offset) {
+
+    #ifdef DEBUG_MERGE
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'kmeans' #####\n");
+    #endif
+
+#ifdef DEBUG_MERGE
+    printf("");
+#endif
+
+
+    int i = start, j= mean+1, k=0, length=(end-start)+1, bi[length] ;
+    double b[length];
+#ifdef DEBUG_MERGE
+    printf("stato del metodo\nstart=%i\nmean=%i\nend=%i\n\ncalcolo length=end-mean+2=%i-%i+2=%i\n\n",start,mean,end,end,mean,length);
+    
+    printf("controllo i<=mean && j<=end, cioe' %i<=%i && %i<=%i?\n",i,mean,j,end);
+#endif
+    while (i<=mean && j<=end) {
+#ifdef DEBUG_MERGE
+    printf("passed\n");
+#endif
+#ifdef DEBUG_MERGE
+    printf("controllo values[%i]<values[%i], cioe' %lf<%lf\n",offset+i,offset+j,values[offset+i],values[offset+j]);
+#endif
+        //blocco iniziale, si confronta elemento con elemento
+        if (values[offset+i]<values[offset+j]) {
+#ifdef DEBUG_MERGE
+    printf("passed\ncopia dei valori:\nb[%i]=%lf\nbi[%i]=%i",k,values[offset+i],k,indices[i]);
+#endif
+            b[k] = values[offset+i];
+            bi[k] = indices[i];
+            i++;
+        } else {
+#ifdef DEBUG_MERGE
+    printf("not passed\ncopia dei valori:\nb[%i]=%lf\nbi[%i]=%i",k,values[offset+j],k,indices[j]);
+#endif
+            b[k] = values[offset+j];
+            bi[k] = indices[j];
+            j++;
+        }
+        k++;
+#ifdef DEBUG_MERGE
+    printf("\n\ncontrollo i<=mean && j<=end, cioè %i<=%i && %i<=%i?\n",i,mean,j,end);
+#endif
+    }
+#ifdef DEBUG_MERGE
+    printf("not passed\n\n");
+#endif
+    while (i <= mean) {
+#ifdef DEBUG_MERGE
+    printf("i<=mean, %i<=%i\n",i,mean);
+#endif
+        //i non è arrivato a media
+        b[k] = values[offset+i];
+        bi[k] = indices[i];
+#ifdef DEBUG_MERGE
+    printf("copia del valori i-esimi: %lf per values e %i per indices\n",values[offset+i],indices[i]);
+#endif
+        i++;
+        k++;
+    }
+    while (j <= end) {
+#ifdef DEBUG_MERGE
+    printf("j<=end, %i<=%i\n",j,end);
+#endif
+        //j non è arrivato alla fine
+        b[k] = values[offset+j];
+        bi[k] = indices[j];
+#ifdef DEBUG_MERGE
+    printf("copia del valori j-esimi: %lf per values e %i per indici\n",values[offset+j],indices[j]);
+#endif
+        j++;
+        k++;
+    }
+#ifdef DEBUG_MERGE
+    printf("Valori b e bi copiati, ecco i risultati\n");
+    for(int h=0;h<length;h++){
+        printf("|%lf|",b[h]);
+    }
+
+    printf("\n");
+    for(int h=0;h<length;h++){
+        printf("|%i|",bi[h]);
+    }
+
+    printf("\n");
+    printf("\n\ncopia dei valori!\n");
+#endif
+    for (k=start; k<=end; k++){
+#ifdef DEBUG_MERGE
+    printf("values[%i]=%lf\nindices[%i]=%i\n\n",offset+k,k,b[k-start],bi[k-start]);
+#endif
+        values[offset+k] = b[k-start];
+        indices[k]=bi[k-start];
+    }
+}
+
+void mergeSort(double* values, int* indices, int start, int end, int offset) {
+    int mean;
+    if (start < end) {
+        mean = (start+end)/2;
+        mergeSort(values, indices, start, mean, offset);
+        mergeSort(values, indices, mean+1, end,offset);
+        merge(values, indices, start, mean, end, offset);
+    }
+
 }
 
 /**
@@ -657,10 +713,15 @@ int cindex(int i,int j,int k){
  * descrizione:
  * implementa la distanza simmetrica con un singolo punto
  */
-void SDC (int d, int k, int m, int nrd, float* distanze, int K, int*ANN, int n, int* map, int ix, int *qx){
+void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, int n, int* map, int ix, int *qx){
     #ifdef DEBUG_SDC
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
     #endif
+
+    #ifdef DEBUG_SDC
+        printf("\n");
+    #endif
+
 
     /*
      * passi:
@@ -674,25 +735,115 @@ void SDC (int d, int k, int m, int nrd, float* distanze, int K, int*ANN, int n, 
      * 
      */
    
-    int j,w,z=0,idist;
-    double sommaparz=0;
+    int j=0,w,idist, imax=0;
+    double sommaparz=0,vmax,tmp;
 
     double ANN_values[K]; //valori del singolo punto;
 
+    //primo giro va fatto a parte
+
+    for(w=0;w<m;w++){
+        #ifdef DEBUG_SDC
+            printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
+        #endif
+        if(qx[w]!=map[j*m+w]){
+            #ifdef DEBUG_SDC
+                printf("NO\n");
+            #endif
+            idist=cindex(qx[w],map[j*m+w],k);
+            sommaparz+=distanze[idist*m+w];
+            #ifdef DEBUG_SDC
+                printf("idist=%i\n",idist);
+                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+            #endif
+        }
+    }
+    ANN[ix*K+j]=j;
+    tmp=sqrt(sommaparz);
+    ANN_values[j]=tmp;
+    vmax=tmp;
+
     //abbiamo i centroidi associati al punto, adesso dobbiamo prendere per ogni punto un centroide e vedere se è il punto vicino 
-    for(j=0;j<K;j++){
+    for(j=1;j<K;j++){
+        sommaparz=0;
         //i primi K passi riempiamo il suo rispettivo ANN
        for(w=0;w<m;w++){
-            idist=cindex(ix,j,k);
-            sommaparz+=distanze[idist*m+w];
+            #ifdef DEBUG_SDC
+                printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
+            #endif
+            if(qx[w]!=map[j*m+w]){
+                #ifdef DEBUG_SDC
+                    printf("NO\n");
+                #endif
+                idist=cindex(qx[w],map[j*m+w],k);
+                sommaparz+=distanze[idist*m+w];
+                #ifdef DEBUG_SDC
+                    printf("idist=%i\n",idist);
+                    printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+                #endif
+            }
        }
-       ANN[idist*K+j]=j;
-       ANN_values[j]=sqrt(sommaparz);
+       ANN[ix*K+j]=j;
+       tmp=sqrt(sommaparz);
+       ANN_values[j]=tmp;
+
+       
+        if(vmax<tmp){
+            vmax=tmp;
+            imax=j;
+        }
+       
 
        //TODO RIPRENDERE DA QUI, DOPO CHE ABBIAMO FINITO DI RIEMPIRE KGRANDE VALORI DOBBIAMO INIZIARE CON GLI ALTRI CERCANDO SEMPRE QUELLO MINORE
     }
 
+    for(;j<n;j++){
+        sommaparz=0;
+        for(w=0;w<m;w++){
+            #ifdef DEBUG_SDC
+                printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
+            #endif
+            if(qx[w]!=map[j*m+w]){
+                #ifdef DEBUG_SDC
+                    printf("NO\n");
+                #endif
+                idist=cindex(qx[w],map[j*m+w],k);
+                sommaparz+=distanze[idist*m+w];
+                #ifdef DEBUG_SDC
+                    printf("idist=%i\n",idist);
+                    printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+                #endif
+            }
+        }
+       tmp=sqrt(sommaparz);
+
+        if(vmax>tmp){
+            //entrata in ANN del valore
+            ANN[ix*K+imax]=j;
+            ANN_values[imax]=tmp;
+
+            //ricerca del nuovo massimo
+            vmax=tmp;
+            for(w=0;w<K;w++){
+                if(vmax<ANN_values[w]){
+                    vmax=ANN_values[w];
+                    imax=w;
+                }
+            }
+        }//if
+       
+    }//for
     #ifdef DEBUG_SDC
+        printf("ANN_values prima dell' ordinamento:");
+        printdv(K,ANN_values,0);
+    #endif
+    mergeSort(ANN_values,ANN,0,K-1,ix*K);
+
+    
+
+    #ifdef DEBUG_SDC
+        printf("ANN_values dopo l' ordinamento:");
+        printdv(K,ANN_values,0);
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'SDC' #####\n");
     #endif
 }
@@ -713,6 +864,10 @@ void SDC (int d, int k, int m, int nrd, float* distanze, int K, int*ANN, int n, 
  * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
  */
 void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map, int nq, float*qs){
+    #ifdef DEBUG_ANNSDC
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'ANNSDC' #####\n");
+    #endif
+
     /*
      * -calcolare tutte le distanze tra centroidi
      * -per ogni punto query calcolare gli ANN con SDC
@@ -721,10 +876,12 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     int nrd=((k-1)*(k))/2;
     int ncd=m;
     int c=0,i,j,w;
-    int* icent[m];
+    /**
+     */ 
+    int icent[m];
     /**
      * la matrice distanze e' una matrice che per ogni riga contiene m distanze
-     * 
+     *
      */
     double distanze[nrd*ncd];
 
@@ -732,8 +889,17 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
         //centroide i
         for( j=i+1;j<k;j++){
             //centroide j
+            #ifdef DEBUG_ANNSDC
+                printf("distanza tra i=%i e j=%i\n",i,j);
+            #endif
             for(w=0;w<m;w++){
-                distanze[c]=(double)(dist_2(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar)); //distanze al quadrato
+                #ifdef DEBUG_ANNSDC
+                    printf("sottovettore %i\n",w);
+                #endif
+                distanze[c++]=(double)(dist_2(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar)); //distanze al quadrato
+                #ifdef DEBUG_ANNSDC
+                    printf("distanze[%i]=%lf\n\n",c-1,distanze[c-1]);
+                #endif
             }//w
         }//j
     }//i
@@ -742,146 +908,14 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     for(i=0;i<nq;i++){
         for(int w=0; w<m;w++){
             icent[w]=mindist(d,dstar,w,qs,i,k,codebook);
+            #ifdef DEBUG_ANNSDC
+                printf("icent[%i]=%i\n\n",w,icent[w]);
+            #endif
         }
         SDC(d,k,m,nrd,distanze,K,ANN,n,map,i,icent);
     }
+    #ifdef DEBUG_ANNSDC
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'ANNSDC' #####\n");
+    #endif
 
 }//ANNSDC
-
-
-
-int mainPATATE (int argv,char*args){
-
-    #define MANUALE
-
-
-    /**dimensione dei singoli punti (vettori)*/
-    int d=4;
-    /**numero di sottovettori*/
-    int m=2;
-    /** il data set */
-    float *dataset;
-    /** la dimensione n del dataset*/
-    int n=6;
-    /**codebook*/
-    float *codebook;
-    /**la dimensione k del codebook*/
-    int k=6;
-
-    /**variabili temporanee*/
-    int j;
-    int i;
-    int *map;
-
-    /** parametri di kmeans */
-    float eps=0.01;
-    int tmin=10;
-    int tmax=100;
-
-    srand(time(NULL));
-
-    #ifdef MANUALE
-       
-
-        float ds[]= {
-            -3,2,5,7,
-            9,-10,1,0,
-            4,-2,3,-5,
-            1,-4,-1,3,
-            -0.5,1,5,-3,
-            0,3,0,-3
-        },
-        cb[]={
-            -3,2,5,7,
-            9,-10,1,0,
-            4,-2,3,-5,
-            1,-4,-1,3,
-            -0.5,1,5,-3,
-            0,3,0,-3
-        };
-
-        dataset=ds;
-        codebook=cb;
-
-    #endif
-
-
-    #ifndef MANUALE
-    printf("inserisci d:>");
-    scanf("%i",&d);
-
-    printf("inserisci n:>");
-    scanf("%i",&n);
-
-    printf("inserisci k:>");
-    scanf("%i",&k);
-    
-
-    dataset= (float*) malloc(d*n*sizeof(float));
-    codebook=(float*)malloc(k*d*sizeof(float));
-
-    
-    printf("Riempiamo il set di punti\n");
-    for(i=0; i<n;i++) {
-        printf("\n\npunto numero %i:\n",i);
-        for(j=0;j<d;j++){
-            printf("dai un numero dataset:> ");
-            scanf("%f",&dataset[i*d+j]);
-        }
-    }
-    #endif
-    printf("riepilogando hai inserito dataset:\n"); 
-    printmf(d,n,dataset);
-
-    //#ifndef MANUALE
-
-    printf("creando il codebook...\n");
-    init_codebook(d,n,dataset,k,codebook);
-    printmf(d,k,codebook);
-    //#endif
-
-    printf("#### IMPOSTAZIONI PARAMETRI DI KMEANS ####\n");
-    #ifndef MANUALE
-    printf("inserisci m:>");
-    scanf("%i",&m);
-    #endif
-
-    
-
-    /*
-    printf("applicando product quantization\n");
-
-    map=pq(d,m,k,codebook,n,dataset);
-
-    printf("ecco il risultato. Res:\n");
-    printmi(m,n,map);
-
-    printf("testando il metodo nuovi centroidi...\n");
-    nuovicentroidi( d,m,n,dataset,map,k,codebook);
-    */
-
-    #ifndef MANUALE
-    printf("inserisci eps(float):>");
-    scanf("%f",&eps);
-
-    printf("inserisci tmin:>");
-    scanf("%i",&tmin);
-
-    printf("inserisci tmax:>");
-    scanf("%i",&tmax);
-    #endif
-
-
-
-    printf("applicando k-means per trovare i migliori centroidi\n");
-    k_means(d,m,eps,tmin,tmax,k,codebook,n,dataset); 
-
-    printf("ecco il risultato. Nuovi Centroidi:\n");
-    printmf(d,k,codebook);
-
-
-    #ifndef MANUALE
-    free(dataset);
-    free(codebook);
-    #endif
-}

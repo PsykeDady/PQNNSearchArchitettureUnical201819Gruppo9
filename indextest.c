@@ -13,7 +13,7 @@ int cindex(int i,int j,int k){
 }
 
 void main(){
-    int k=20;
+    int k=2;
     int i=0;
     int j=0;
     int c=0;
