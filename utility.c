@@ -9,8 +9,49 @@
 #include <stdlib.h>
 #include <time.h>
 
+
+#ifndef PQNN_ANGIULLI
+    #define	MATRIX		float*
+
+
+    typedef struct  {
+        char* filename; //
+        MATRIX ds; // data set 
+        MATRIX qs; // query set
+        int n; // numero di punti del data set
+        int d; // numero di dimensioni del data/query set
+        int nq; // numero di punti del query set
+        int knn; // numero di ANN approssimati da restituire per ogni query
+        int m; // numero di gruppi del quantizzatore prodotto
+        int k; // numero di centroidi di ogni sotto-quantizzatore
+        int kc; // numero di centroidi del quantizzatore coarse
+        int w; // numero di centroidi del quantizzatore coarse da selezionare per la ricerca non esaustiva
+        int nr; // dimensione del campione dei residui nel caso di ricerca non esaustiva
+        float eps; // 
+        int tmin; //
+        int tmax; //
+        int exaustive; // tipo di ricerca: (0=)non esaustiva o (1=)esaustiva
+        int symmetric; // tipo di distanza: (0=)asimmetrica ADC o (1=)simmetrica SDC
+        int silent;
+        int display;
+        // nns: matrice row major order di interi a 32 bit utilizzata per memorizzare gli ANN
+        // sulla riga i-esima si trovano gli ID (a partire da 0) degli ANN della query i-esima
+        //
+        int* ANN; 
+        //
+        // Inserire qui i campi necessari a memorizzare i Quantizzatori
+        //
+        MATRIX codebook;
+        int * map;
+        // ...
+        // ...
+        //
+    } params;
+#endif
+
+
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
-#define DEBUG
+#define DEBUG 
 
 /**
  * lista di flag di debug, commentare/decommentare singolo flag per disabilitare/abilitare le stampe di debug del relativo metodo
@@ -31,8 +72,10 @@
     //#define DEBUG_CINDEX
     //#define DEBUG_MERGE
     //#define DEBUG_MERGESORT
-    #define DEBUG_SDC
-    #define DEBUG_ANNSDC
+    //#define DEBUG_SDC
+    //#define DEBUG_ANNSDC
+    //#define DEBUG_ADC
+    //#define DEBUG_ANNADC  
 #endif
 
 //template debug da incollare ogni metodo:
@@ -223,9 +266,8 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
     #ifdef DEBUG_INITCODEBOOK
         printf("numero di elementi da creare:%i\n\n",k);
     #endif
-    int *rp=(int*)malloc(sizeof(int)*k);
-
-    for(;i<k;i++){        
+    int rp[k];
+    for(i=0;i<k;i++){        
         do{
             flag=1;
             r= (int)(rand()%n);
@@ -248,6 +290,7 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
             printf("\n\n");
         #endif
     }//for i
+
 
     #ifdef DEBUG_INITCODEBOOK
         printf("stampiamo ora il codebook risultato\n");
@@ -436,7 +479,7 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
  *  - si può restituire la mappa come raccolta di indici del codebook
  * 
  */
-int* pq(int d, int m, int k, float *codebook, int n, float *dataset){
+void pq(int d, int m, int k, float *codebook, int n, float *dataset, int*map){
     #ifdef DEBUG_PQ
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'pq' #####\n");
     #endif
@@ -455,7 +498,7 @@ int* pq(int d, int m, int k, float *codebook, int n, float *dataset){
 
    int dstar=d/m; //numero elementi sottovettori
     int i,j,w;
-    int *map=(int*)malloc(sizeof(int) * n*m);
+    
     for(i=0;i<n;i++){ // indice di riga del ds
         #ifdef DEBUG_PQ
             printf("riga dataset:%i\n",i);
@@ -475,14 +518,13 @@ int* pq(int d, int m, int k, float *codebook, int n, float *dataset){
        
    }//i
 
-   return map;
 }
 
 
 
 
 
-void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codebook, int n, float* dataset){
+void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codebook, int n, float* dataset, int* map){
 
     #ifdef DEBUG_KMEANS
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'kmeans' #####\n");
@@ -503,10 +545,9 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
     
     double ob=0; 
     double nuovo_ob=0;
-    int * map;
 
     do{
-        map=pq(d,m,k,codebook,n,dataset);
+        pq(d,m,k,codebook,n,dataset,map);
         #ifdef DEBUG_KMEANS
             printf("stampa MAP al passo t=%i\n",t);
             printmi(m,n,map);
@@ -521,7 +562,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
     }while(t++<tmin-1);
     ob=obiettivo(d,m,n,dataset,map,codebook);
     //l'ultima volta il ciclo lo facciamo al di fuori del while
-    map=pq(d,m,k,codebook,n,dataset);
+    pq(d,m,k,codebook,n,dataset,map);
     #ifdef DEBUG_KMEANS
         printf("stampa RES al passo t=%i\n",t);
         printmi(m,n,map);
@@ -542,7 +583,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
             printmf(d,k,codebook);
             printf("\n");
         #endif
-        map=pq(d,m,k,codebook,n,dataset);
+        pq(d,m,k,codebook,n,dataset,map);
         #ifdef DEBUG_KMEANS
             printf("stampa RES al passo t=%i\n",t-1);
             printmi(m,n,map);
@@ -555,8 +596,6 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
         delta=(float)(ob-nuovo_ob);
         ob=nuovo_ob;
     }
-
-    free(map);
 
 }
 
@@ -591,7 +630,7 @@ int cindex(int i,int j,int k){
 void merge(double* values, int* indices, int start, int mean, int end, int offset) {
 
     #ifdef DEBUG_MERGE
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'kmeans' #####\n");
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'merge' #####\n");
     #endif
 
 #ifdef DEBUG_MERGE
@@ -794,7 +833,7 @@ void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, int n,
         }
        
 
-       //TODO RIPRENDERE DA QUI, DOPO CHE ABBIAMO FINITO DI RIEMPIRE KGRANDE VALORI DOBBIAMO INIZIARE CON GLI ALTRI CERCANDO SEMPRE QUELLO MINORE
+       
     }
 
     for(;j<n;j++){
@@ -878,7 +917,7 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     int c=0,i,j,w;
     /**
      */ 
-    int icent[m];
+    int * icent= (int*)(malloc(sizeof(int)*m));
     /**
      * la matrice distanze e' una matrice che per ogni riga contiene m distanze
      *
@@ -903,8 +942,6 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
             }//w
         }//j
     }//i
-
-    
     for(i=0;i<nq;i++){
         for(int w=0; w<m;w++){
             icent[w]=mindist(d,dstar,w,qs,i,k,codebook);
@@ -915,7 +952,220 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
         SDC(d,k,m,nrd,distanze,K,ANN,n,map,i,icent);
     }
     #ifdef DEBUG_ANNSDC
+    printf("icent e':    ");
+
+        printiv(m,icent,0);
+    #endif
+
+    free(icent);
+    #ifdef DEBUG_ANNSDC
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'ANNSDC' #####\n");
     #endif
 
 }//ANNSDC
+
+
+
+//macro per ADC
+//#define ADCFOR1(W,M,J,K) for(w=0;w<m;w++){ int idist=W*M+J*K; int sommaparz+=distanze[idist*m+w]; }
+
+
+/**
+ * args:
+ * -d= dimensione del vettore
+ * -m=numero di sottovettori
+ * -nd=numero distanze
+ * -distanze=distanze tra tutti i punti del codebook
+ * -K=numero elementi in ANN
+ * -ANN=risultati (set già inizializzato)
+ * -n=numero di elementi nel dataset
+ * -map=dataset
+ * -ix= indice del punto query, per memorizzarlo in ANN
+ * -icent=il punto query quantizzato (contiene una lista di indici a cui è associato il centroide corrispondente)
+ * 
+ * descrizione:
+ * implementa la distanza simmetrica con un singolo punto
+ */
+void ADC (int d, int k, int m, double* distanze, int K, int*ANN, int n, int* map, int ix, float *qs){
+    #ifdef DEBUG_ADC
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'ADC' #####\n");
+    #endif
+
+    /*
+    * passi:
+    * 
+    * -calcolare i centroidi di x
+    * -calcolare insieme distanze 
+    * -per ogni centroide in map, calcolare la distanza euclidea tra un sottocentroide e un altro come:
+    * --radice(somma( distanza(qx,qy)^2 ))
+    * --confrontare con minore distanza attualmente calcolata 
+    * -restituire i risultati 
+    * 
+    */
+   
+    int j=0,w,idist, imax=0;
+    double sommaparz=0,vmax,tmp;
+
+    double ANN_values[K]; //valori del singolo punto;
+
+    //primo giro va fatto a parte
+
+    for(w=0;w<m;w++){
+        idist=map[j*m+w];
+        sommaparz+=distanze[idist*m+w];
+        #ifdef DEBUG_ADC
+            printf("idist=%i\n",idist);
+            printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+        #endif
+    }
+    ANN[ix*K+j]=j;
+    tmp=sqrt(sommaparz);
+    ANN_values[j]=tmp;
+    vmax=tmp;
+ 
+    for(j=1;j<K;j++){
+        sommaparz=0;
+        //i primi K passi riempiamo il suo rispettivo ANN
+       for(w=0;w<m;w++){
+            idist=map[j*m+w];
+            sommaparz+=distanze[idist*m+w];
+            #ifdef DEBUG_ADC
+                printf("idist=%i\n",idist);
+                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+            #endif
+        }
+        ANN[ix*K+j]=j;
+        tmp=sqrt(sommaparz);
+        ANN_values[j]=tmp;
+        if(vmax<tmp){
+            vmax=tmp;
+            imax=j;
+        }
+       
+
+       
+    }
+
+    for(;j<n;j++){
+        sommaparz=0;
+        for(w=0;w<m;w++){
+            idist=map[j*m+w];
+            sommaparz+=distanze[idist*m+w];
+            #ifdef DEBUG_ADC
+                printf("idist=%i\n",idist);
+                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
+            #endif
+        }
+        tmp=sqrt(sommaparz);
+
+        if(vmax>tmp){
+            //entrata in ANN del valore
+            ANN[ix*K+imax]=j;
+            ANN_values[imax]=tmp;
+
+            //ricerca del nuovo massimo
+            vmax=tmp;
+            for(w=0;w<K;w++){
+                if(vmax<ANN_values[w]){
+                    vmax=ANN_values[w];
+                    imax=w;
+                }
+            }//
+        }//if
+       
+    }//for
+    
+    #ifdef DEBUG_ADC
+        printf("ANN_values prima dell' ordinamento:");
+        printdv(K,ANN_values,0);
+    #endif
+    mergeSort(ANN_values,ANN,0,K-1,ix*K);
+    #ifdef DEBUG_ADC
+        printf("ANN_values dopo l' ordinamento:");
+        printdv(K,ANN_values,0);
+
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'ADC' #####\n");
+    #endif
+}
+
+
+/**
+ * args:
+ * -d= dimensione del vettore
+ * -m=numero di sottovettori
+ * -k=numero centroidi
+ * -codebook=centroidi
+ * -K=numero elementi in ANN
+ * -ANN=risultati (set già inizializzato)
+ * -n=numero di elementi nel dataset
+ * -map=dataset
+ * -qs: struttura con punti query
+ * 
+ * descrizione:
+ * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
+ */
+void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map, int nq, float*qs){
+    #ifdef DEBUG_ANNADC
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'ANNADC' #####\n");
+    #endif
+
+    int i,w,j,c=0,dstar=d/m,icent;
+    double distanze[k*m];
+
+    #ifdef DEBUG_ANNADC
+        printf("riepilogo stato del metodo\nd=%i\nm=%i\nk=%i\nK=%i\nn=%i\nnq=%i\ncodebook=\n",d,m,k,K,n,nq);
+        printmf(d,k,codebook);
+        printf("map=\n");
+        printmi(m,n,map);
+    #endif
+
+/**
+ * passi:
+ * -per ogni punto query
+ * --creare una struttura che mantenga le distanze tra ogni punto e e tutti i centroidi
+ * --applicare ADC(d,m,k,distanze,n,mappa,ANN,ix,qs) 
+ */
+
+    for(i=0;i<nq;i++){ // per ogni punto del query set
+        for(j=0;j<k;j++){//per ogni punto del codebook
+            for(w=0;w<m;w++){//ogni sottovettore
+                #ifdef DEBUG_ANNADC
+                    //printf("i=%i,j=%i,w=%i\n",i,j,w);
+                #endif
+                distanze[c++]=(double)(dist_2(dstar,qs,i*d+w*dstar,codebook,j*d+w*dstar));
+            }
+        }
+        ADC(d,k,m,distanze,K,ANN,n,map,i,qs);
+        c=0;
+    }
+
+
+    #ifdef DEBUG_ANNADC
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'ANNADC' #####\n");
+    #endif
+}
+
+//notExaustiveIndexing
+
+//notExaustiveSearching
+
+
+void notExaustive(params* input){
+
+    /*
+     *
+     * -creare un sottoinsieme Ry del dataset
+     * 
+     * -indexing
+     * --associare ogni punto y ad un centroide con vq
+     * --creare un vettore di residui r(y)=y-qc(y) per ogni y
+     * --quantizzare con pq r(y)
+     * 
+     * -searching
+     * --creiamo 'w' vicini di x, e creiamo un vettore 'r(x)' siffatto
+     * --calcola la distanza tra r(x) nei suoi sottovettori e tutti i centroidi
+     * --calcolare la radice della distanza tra r(x) e r(y) quantizzata
+     * --scegliere K vicini piccoli per risultato
+     */
+
+}

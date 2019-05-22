@@ -48,6 +48,7 @@
 
 //aggiunto dal team9
 #include "utility.c"
+#define PQNN_ANGIULLI
 
 
 #define	MATRIX		float*
@@ -81,7 +82,8 @@ typedef struct {
 	//
 	// Inserire qui i campi necessari a memorizzare i Quantizzatori
 	//
-	// ...
+	MATRIX codebook;
+	int * map;
 	// ...
 	// ...
 	//
@@ -196,14 +198,11 @@ void pqnn_index(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
-    
-
-	MATRIX codebook=alloc_matrix(input->k,input->d);
 	
-	init_codebook(input->d,input->n,input->ds,input->k,codebook);
+	//pqnn64_index(input); // Chiamata funzione assembly
+    init_codebook(input->d,input->n,input->ds,input->k,input->codebook);
 	
-    //pqnn64_index(input); // Chiamata funzione assembly
-	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,codebook,input->n,input->ds);
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,input->n,input->ds,input->map);
 
 
     // -------------------------------------------------
@@ -222,6 +221,13 @@ void pqnn_search(params* input) {
     // -------------------------------------------------
     
     //pqnn64_search(input); // Chiamata funzione assembly
+	if(input->symmetric){
+		//se simmetrica
+		ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+	}else{
+		ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+
+	}
 
 	// Restituisce il risultato come una matrice di nq * knn
 	// identificatori associati agli ANN approssimati delle nq query.
@@ -247,7 +253,7 @@ int main(int argc, char** argv) {
 
 	input->filename = NULL;
 	input->exaustive = 1;
-	input->symmetric = 1;
+	input->symmetric = 0;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
@@ -422,6 +428,8 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
+	input->codebook=(float*)(malloc(sizeof(float)*input->k*input->d));
+	input->map=(int*)(malloc(sizeof(int)*(input->m*input->n)));
 	
 	clock_t t = clock();
 	pqnn_index(input);
@@ -441,11 +449,13 @@ int main(int argc, char** argv) {
 	t = clock();
 	pqnn_search(input);
 	t = clock() - t;
+
 	
 	if (!input->silent)
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
+	matprintmi(input->knn,input->nq,input->ANN);
 	
 	//
 	// Salva gli ANN
@@ -464,6 +474,10 @@ int main(int argc, char** argv) {
  		}
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
+
+
+	free(input->codebook);
+	free(input->map);
 	
 	if (!input->silent)
 		printf("\nDone.\n");

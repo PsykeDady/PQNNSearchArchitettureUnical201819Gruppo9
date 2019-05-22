@@ -48,6 +48,7 @@
 
 //aggiunto dal team 9
 #include "utility.c"
+#define PQNN_ANGIULLI
 
 
 #define	MATRIX		float*
@@ -81,8 +82,8 @@ typedef struct {
 	//
 	// Inserire qui i campi necessari a memorizzare i Quantizzatori
 	//
-	// ...
-	// ...
+	MATRIX codebook;
+	int * map;
 	// ...
 	//
 } params;
@@ -196,11 +197,10 @@ void pqnn_index(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
-    MATRIX codebook=alloc_matrix(input->k,input->d);
+    //pqnn32_index(input); // Chiamata funzione assembly
+    init_codebook(input->d,input->n,input->ds,input->k,input->codebook);
 	
-	init_codebook(input->d,input->n,input->ds,input->k,codebook);
-    //pqnn32_index(input); // Chiamata funzione assembly TODO
-	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,codebook,input->n,input->ds);
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,input->n,input->ds,input->map);
 
     // -------------------------------------------------
 
@@ -222,7 +222,13 @@ void pqnn_search(params* input) {
     // -------------------------------------------------
     
     //pqnn32_search(input); // Chiamata funzione assembly
-	printf("funzione in via di sviluppo \n");
+	if(input->symmetric){
+		//se simmetrica
+		ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+	}else{
+		ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+
+	}
 	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
@@ -423,6 +429,8 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
+	input->codebook=(float*)(malloc(sizeof(float)*input->k*input->d));
+	input->map=(int*)(malloc(sizeof(int)*(input->m*input->n)));
 	
 	clock_t t = clock();
 	pqnn_index(input);
@@ -465,6 +473,9 @@ int main(int argc, char** argv) {
  		}
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
+
+	free(input->codebook);
+	free(input->map);
 	
 	if (!input->silent)
 		printf("\nDone.\n");

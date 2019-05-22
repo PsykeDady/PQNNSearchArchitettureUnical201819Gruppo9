@@ -5,7 +5,7 @@
 void merge(double* values, int* indices, int start, int mean, int end, int offset) {
 
     #ifdef DEBUG_MERGE
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'kmeans' #####\n");
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'merge' #####\n");
     #endif
 
 #ifdef DEBUG_MERGE

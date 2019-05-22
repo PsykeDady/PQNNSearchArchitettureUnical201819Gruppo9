@@ -48,6 +48,25 @@ void printdv(int d,double *v,int vi){
     printf("]\n");
 }
 
+/**
+ * argomenti:
+ *  - 'd' numero di celle da stampare
+ *  - 'v' vettore da cui prelevare le celle
+ *  - 'vi' indice iniziale di v ( non sarà moltiplicato)
+ * descrizione:
+ *  INT: stampa d celle del vettore v passato come parametro a partire da vi
+ */
+void printiv(int d,int *v,int vi){
+    
+
+    printf("[");
+    for(int i=0; i< d-1;i++){
+        printf("%i,",v[vi+i]);
+    }
+    printf("%i",v[vi+d-1]);
+    printf("]\n");
+}
+
 
 /**
  * argomenti:
@@ -93,4 +112,23 @@ void printmi(int d, int n, int *m){
         }
         printf("%+i|\n",m[i*d+d-1]);
     }
+}
+
+
+
+void matprintmi(int d, int n, int*matrix){
+    int i=0,j=0;
+    printf("[");
+    for(;i<n-1;i++){
+        printf("[");
+        for(j=0;j<d-1;j++){
+            printf("%i,",matrix[i*d+j]);
+        }
+        printf("%i],",matrix[i*d+d-1]);
+    }
+    printf("[");
+    for(j=0;j<d-1;j++){
+            printf("%i,",matrix[i*d+j]);
+    }
+    printf("%i]]",matrix[i*d+d-1]);
 }
