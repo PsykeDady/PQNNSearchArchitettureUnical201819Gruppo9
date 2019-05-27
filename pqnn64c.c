@@ -45,10 +45,9 @@
 #include <string.h>
 #include <time.h>
 #include <xmmintrin.h>
-
 //aggiunto dal team9
 #include "utility.c"
-#define PQNN_ANGIULLI
+
 
 
 #define	MATRIX		float*
@@ -240,7 +239,8 @@ void pqnn_search(params* input) {
 int main(int argc, char** argv) {
 
 	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
-	srand(time(NULL));
+	//srand(time(NULL));
+	srand(4444);
 	
 	char fname[256];
 	int i, j;
@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
 
 	input->filename = NULL;
 	input->exaustive = 1;
-	input->symmetric = 0;
+	input->symmetric = 1;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;

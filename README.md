@@ -37,14 +37,10 @@
   * ~~distanza simmetrica o SDC(x,y): SQRT(Sommatoria(distanza(q(x),q(y))^2)), tenendo in memoria l'insieme di distanze tra ogni centroide~~
   * ~~distanza asimmetrita o ADC(x,y): SQRT(Sommatoria(distanza(x,q(y))^2)),    tenendo in memoria per ogni diversa x le distanze da ogni centroide~~
 * ANN non esaustiva
-  * calcolo residui : r(y)=y-q(y)
-  * approx(y)=q(y)-pq(r(y))
-  * dist_approx(x,y)=dist(approx(x)-q(y),approx(y)-q(y)) 
-    * dist_approx deve funzionare sia con SDC che con ADC
-  * algoritmo:
-    * scegliere un set di campioni Ry  di dimensione nr (passato come input)
-    * calcolare attraverso questo un qp unico per tutti 
-    * per ogni centroide ci determinare approx_dist(x,y) tale che q(y)=ci e collezionare le K distanze più piccoli
-    * restituire quindi i K punti
+  * ~~calcolo residui : r(y)=y-q(y)~~
+  * ~~quantizzare con pq r(y)~~
+  * ~~creiamo un vettore 'r(x)': con  'w' vicini di x ( e le loro distanze da x)~~
+  * calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli
+  
 * sostituire in SDC la struttura distanze con una struttura dove la cella [ i , j , m ] accede alla distanza tra il centroide i, il centroide j e sottocentroide w. 
 * unire il codice ai template dati da Angiulli (64-32bit), preparare i dati come matrice ANN 

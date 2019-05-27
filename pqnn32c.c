@@ -45,10 +45,9 @@
 #include <string.h>
 #include <time.h>
 #include <xmmintrin.h>
-
 //aggiunto dal team 9
 #include "utility.c"
-#define PQNN_ANGIULLI
+
 
 
 #define	MATRIX		float*
@@ -87,6 +86,7 @@ typedef struct {
 	// ...
 	//
 } params;
+
 
 
 /*

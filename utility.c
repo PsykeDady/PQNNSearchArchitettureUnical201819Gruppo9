@@ -10,44 +10,7 @@
 #include <time.h>
 
 
-#ifndef PQNN_ANGIULLI
-    #define	MATRIX		float*
 
-
-    typedef struct  {
-        char* filename; //
-        MATRIX ds; // data set 
-        MATRIX qs; // query set
-        int n; // numero di punti del data set
-        int d; // numero di dimensioni del data/query set
-        int nq; // numero di punti del query set
-        int knn; // numero di ANN approssimati da restituire per ogni query
-        int m; // numero di gruppi del quantizzatore prodotto
-        int k; // numero di centroidi di ogni sotto-quantizzatore
-        int kc; // numero di centroidi del quantizzatore coarse
-        int w; // numero di centroidi del quantizzatore coarse da selezionare per la ricerca non esaustiva
-        int nr; // dimensione del campione dei residui nel caso di ricerca non esaustiva
-        float eps; // 
-        int tmin; //
-        int tmax; //
-        int exaustive; // tipo di ricerca: (0=)non esaustiva o (1=)esaustiva
-        int symmetric; // tipo di distanza: (0=)asimmetrica ADC o (1=)simmetrica SDC
-        int silent;
-        int display;
-        // nns: matrice row major order di interi a 32 bit utilizzata per memorizzare gli ANN
-        // sulla riga i-esima si trovano gli ID (a partire da 0) degli ANN della query i-esima
-        //
-        int* ANN; 
-        //
-        // Inserire qui i campi necessari a memorizzare i Quantizzatori
-        //
-        MATRIX codebook;
-        int * map;
-        // ...
-        // ...
-        //
-    } params;
-#endif
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
@@ -60,6 +23,7 @@
     #include "printutility.c"
     //#define DEBUG_DIST2
     //#define DEBUG_DIST
+    //#define DEBUG_DIFFVF
     //#define DEBUG_COPYV
     //#define DEBUG_MINDIST
     //#define DEBUG_INITCODEBOOK
@@ -75,8 +39,13 @@
     //#define DEBUG_SDC
     //#define DEBUG_ANNSDC
     //#define DEBUG_ADC
-    //#define DEBUG_ANNADC  
+    //#define DEBUG_ANNADC
+    //#define DEBUG_NOTEXAUSTIVE
 #endif
+
+//#### LISTA MACRO ####
+/** calcola l'indice di una matrice quadrata vettorizzata */
+#define MATRIX3_INDEX(K,M,I,J,W) I*K*M+J*M+W
 
 //template debug da incollare ogni metodo:
 /* #ifdef DEBUG_
@@ -154,8 +123,28 @@ float dist(int d, float *x, int xi, float *y, int yi){
 }
 
 
+/**
+ * argomenti:
+ * -'d'  : numero elementi per vettore
+ * -'x'  : primo elemento di sottrazione
+ * -'xi' : indice di partenza (non moltiplicato) per x 
+ * -'y'  : secondo elemento di sottrazione
+ * -'yi' : indice di partenza (non moltiplicato) per y
+ * -'res': vettore in cui si memorizzeranno i risultati
+ * -'ri' : indice di partenza (non moltiplicato) per res
+ * 
+ * descr:
+ * -sottrae gli elementi del vettore x dagli elementi del vettore y (realizza res[w]=x[i]-y[j] per i che va da xi a xi+d, j che va da yi a yi+d e w che va da ri a ri+d)
+ */
 
+void diffvf(int d, float* x, int xi, float *y, int yi, float *res, int ri){
 
+    int i;
+
+    for(i=0; i<d; i++)
+        res[ri+i]=x[xi+i]-y[yi+i];
+
+}
 
 
 
@@ -601,31 +590,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
 
 
 
-/**
- * args:
- * -i : indice primo centroide
- * -j :  indice secondo centroide
- * -k : numero di centroidi
- * 
- * descrizione:
- * -tirava fuori l'indice di riga della struttura che accoppia a due centroidi la loro distanza
- * 
- */ 
-int cindex(int i,int j,int k){
 
-    if(j<i){
-        int tmp=i;
-        i=j;
-        j=tmp;
-    }
-
-    int index=0;
-    for(int c=0;c<i;c++){
-        index+=k-c-1;
-    }
-
-    return index+(j-i-1);
-}
 
 void merge(double* values, int* indices, int start, int mean, int end, int offset) {
 
@@ -653,19 +618,19 @@ void merge(double* values, int* indices, int start, int mean, int end, int offse
     printf("controllo values[%i]<values[%i], cioe' %lf<%lf\n",offset+i,offset+j,values[offset+i],values[offset+j]);
 #endif
         //blocco iniziale, si confronta elemento con elemento
-        if (values[offset+i]<values[offset+j]) {
+        if (values[i]<values[j]) {
 #ifdef DEBUG_MERGE
     printf("passed\ncopia dei valori:\nb[%i]=%lf\nbi[%i]=%i",k,values[offset+i],k,indices[i]);
 #endif
-            b[k] = values[offset+i];
-            bi[k] = indices[i];
+            b[k] = values[i];
+            bi[k] = indices[offset+i];
             i++;
         } else {
 #ifdef DEBUG_MERGE
     printf("not passed\ncopia dei valori:\nb[%i]=%lf\nbi[%i]=%i",k,values[offset+j],k,indices[j]);
 #endif
-            b[k] = values[offset+j];
-            bi[k] = indices[j];
+            b[k] = values[j];
+            bi[k] = indices[offset+j];
             j++;
         }
         k++;
@@ -681,8 +646,8 @@ void merge(double* values, int* indices, int start, int mean, int end, int offse
     printf("i<=mean, %i<=%i\n",i,mean);
 #endif
         //i non è arrivato a media
-        b[k] = values[offset+i];
-        bi[k] = indices[i];
+        b[k] = values[i];
+        bi[k] = indices[offset+i];
 #ifdef DEBUG_MERGE
     printf("copia del valori i-esimi: %lf per values e %i per indices\n",values[offset+i],indices[i]);
 #endif
@@ -694,8 +659,8 @@ void merge(double* values, int* indices, int start, int mean, int end, int offse
     printf("j<=end, %i<=%i\n",j,end);
 #endif
         //j non è arrivato alla fine
-        b[k] = values[offset+j];
-        bi[k] = indices[j];
+        b[k] = values[j];
+        bi[k] = indices[offset+j];
 #ifdef DEBUG_MERGE
     printf("copia del valori j-esimi: %lf per values e %i per indici\n",values[offset+j],indices[j]);
 #endif
@@ -720,8 +685,8 @@ void merge(double* values, int* indices, int start, int mean, int end, int offse
 #ifdef DEBUG_MERGE
     printf("values[%i]=%lf\nindices[%i]=%i\n\n",offset+k,k,b[k-start],bi[k-start]);
 #endif
-        values[offset+k] = b[k-start];
-        indices[k]=bi[k-start];
+        values[k] = b[k-start];
+        indices[offset+k]=bi[k-start];
     }
 }
 
@@ -747,7 +712,7 @@ void mergeSort(double* values, int* indices, int start, int end, int offset) {
  * -n=numero di elementi nel dataset
  * -map=dataset
  * -ix= indice del punto query, per memorizzarlo in ANN
- * -icent=il punto query quantizzato (contiene una lista di indici a cui è associato il centroide corrispondente)
+ * -qx= pq(x), vettore a m celle con il centroide di x
  * 
  * descrizione:
  * implementa la distanza simmetrica con un singolo punto
@@ -774,53 +739,24 @@ void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, int n,
      * 
      */
    
-    int j=0,w,idist, imax=0;
-    double sommaparz=0,vmax,tmp;
+    int j=0,w, imax=0;
+    double sommaparz=0,vmax=-1,tmp;
 
     double ANN_values[K]; //valori del singolo punto;
 
-    //primo giro va fatto a parte
-
-    for(w=0;w<m;w++){
-        #ifdef DEBUG_SDC
-            printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
-        #endif
-        if(qx[w]!=map[j*m+w]){
-            #ifdef DEBUG_SDC
-                printf("NO\n");
-            #endif
-            idist=cindex(qx[w],map[j*m+w],k);
-            sommaparz+=distanze[idist*m+w];
-            #ifdef DEBUG_SDC
-                printf("idist=%i\n",idist);
-                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
-            #endif
-        }
-    }
-    ANN[ix*K+j]=j;
-    tmp=sqrt(sommaparz);
-    ANN_values[j]=tmp;
-    vmax=tmp;
+    
 
     //abbiamo i centroidi associati al punto, adesso dobbiamo prendere per ogni punto un centroide e vedere se è il punto vicino 
-    for(j=1;j<K;j++){
+    for(j=0;j<K;j++){
         sommaparz=0;
         //i primi K passi riempiamo il suo rispettivo ANN
        for(w=0;w<m;w++){
+            
+            sommaparz+=distanze[MATRIX3_INDEX(k,m,qx[w],map[j*m+w],w)];
             #ifdef DEBUG_SDC
-                printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
+                printf("indice=%i\n",MATRIXBLABLA);
+                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[*m+w],sommaparz);
             #endif
-            if(qx[w]!=map[j*m+w]){
-                #ifdef DEBUG_SDC
-                    printf("NO\n");
-                #endif
-                idist=cindex(qx[w],map[j*m+w],k);
-                sommaparz+=distanze[idist*m+w];
-                #ifdef DEBUG_SDC
-                    printf("idist=%i\n",idist);
-                    printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
-                #endif
-            }
        }
        ANN[ix*K+j]=j;
        tmp=sqrt(sommaparz);
@@ -839,21 +775,13 @@ void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, int n,
     for(;j<n;j++){
         sommaparz=0;
         for(w=0;w<m;w++){
+            
+            sommaparz+=distanze[MATRIX3_INDEX(k,m,qx[w],map[j*m+w],w)];
             #ifdef DEBUG_SDC
-                printf("qx[%i]=map[%i*%i+%i] cioè %i=%i ?",w,j,m,w,qx[w],map[j*m+w]);
+                printf("indice=%i\n",MATRIXBLABLA);
+                printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[*m+w],sommaparz);
             #endif
-            if(qx[w]!=map[j*m+w]){
-                #ifdef DEBUG_SDC
-                    printf("NO\n");
-                #endif
-                idist=cindex(qx[w],map[j*m+w],k);
-                sommaparz+=distanze[idist*m+w];
-                #ifdef DEBUG_SDC
-                    printf("idist=%i\n",idist);
-                    printf("sommeparziali aumenta di: %lf\n prima era %lf\n\n",distanze[idist*m+w],sommaparz);
-                #endif
-            }
-        }
+       }
        tmp=sqrt(sommaparz);
 
         if(vmax>tmp){
@@ -914,18 +842,24 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     int dstar=d/m;
     int nrd=((k-1)*(k))/2;
     int ncd=m;
-    int c=0,i,j,w;
+    int i,j,w;
     /**
      */ 
     int * icent= (int*)(malloc(sizeof(int)*m));
     /**
-     * la matrice distanze e' una matrice che per ogni riga contiene m distanze
+     * matrice cubica dove :
+     *  -ogni riga corrisponde al vettore i-esimo
+     *  -ogni colonna corrisponde al vettore j-esimo
+     *  -ogni cella contiene un vettore di m-distanze corrispondenti alle m distanze dei sottovettori di centroidi
      *
      */
-    double distanze[nrd*ncd];
+    double distanze[k*k*m];
+    double tmp;
 
     for( i=0; i<k;i++){
         //centroide i
+        for(w=0;w<m;w++) 
+            distanze[MATRIX3_INDEX(k,m,i,i,w)]=0;
         for( j=i+1;j<k;j++){
             //centroide j
             #ifdef DEBUG_ANNSDC
@@ -935,9 +869,11 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
                 #ifdef DEBUG_ANNSDC
                     printf("sottovettore %i\n",w);
                 #endif
-                distanze[c++]=(double)(dist_2(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar)); //distanze al quadrato
+                tmp=(double)(dist_2(dstar,codebook,d*i+w*dstar,codebook,d*j+w*dstar)); //distanze al quadrato
+                distanze[MATRIX3_INDEX(k,m,i,j,w)]=tmp;
+                distanze[MATRIX3_INDEX(k,m,j,i,w)]=tmp;
                 #ifdef DEBUG_ANNSDC
-                    printf("distanze[%i]=%lf\n\n",c-1,distanze[c-1]);
+                    printf("distanze[%i]=%lf\n\n",,distanze[]);
                 #endif
             }//w
         }//j
@@ -1145,27 +1081,205 @@ void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     #endif
 }
 
-//notExaustiveIndexing
+/**
+ * -d:dimensione vettori
+ * -w:numero centoidi da associare
+ * -qs: query set
+ * -ix: indice x
+ * -k:numero elementi codebook
+ * -codebook: struttura centroidi
+ * -rx:struttura di ritorno
+ * 
+ * descr: 
+ *  TODO
+ */
 
-//notExaustiveSearching
+void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, int*rx){
+    int j,imax,h;
+    float distmax=-1,tmp;
+    float *rx_values=(float*)(malloc(sizeof(float)*w));
+    //per ogni punto query, vanno memorizzati i w centroidi vicini e la loro distanza
+    
+    //INIZIO RICERCA W
+    
+    for(j=0; j<w;j++){
+        tmp=dist_2(d,qs,ix*d,codebook,j*d); // dist_2 perche': tanto se e' piu' piccola la radice, e' piu' piccolo anche il radicando
+        if(distmax<tmp){
+            distmax=tmp;
+            imax=j;
+        }
+        rx[j]= j;
+        rx_values[j]=tmp;
+    }
+    
+    for(;j<k;j++){
+        tmp=dist_2(d,qs,ix*d,codebook,j*d); // dist_2 perche': tanto se e' piu' piccola la radice, e' piu' piccolo anche il radicando
+        if(distmax>tmp){
+            distmax=tmp;
+            rx_values[imax]= tmp;
+            rx[imax]= j;
+
+            for(h=0; h<w;h++){
+                //ricerca nuovo massimo 
+                if(distmax<rx_values[h]){
+                    distmax=rx_values[h];
+                    imax=rx[h];
+                }
+            }//h
+        }//trovato nuovo max
+    }//j
+    //FINE RICERCA W
+    free(rx_values);
+}
 
 
-void notExaustive(params* input){
+/**
+ * args:
+ * -d=dimensione vettori
+ * -m=numero sotto-vettori
+ * -nr=dimensione ridotta dataset
+ * -w=numero centroidi per querypoint
+ * -n=dimensione dataset
+ * -ds=dataset
+ * -k=dimensione codebook
+ * -nq=dimensione query set
+ * -qs=query set
+ * -K=numero di ANN da trovare
+ * -ANN=matrice dei vicini
+ * 
+ * 
+ * descr:
+ * -TODO
+ */
+
+void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, float*codebook,int nq,float* qs,int K, int *ANN){
+    
 
     /*
      *
      * -creare un sottoinsieme Ry del dataset
      * 
      * -indexing
-     * --associare ogni punto y ad un centroide con vq
+     * --associare ogni punto y del dataset ad un centroide con vq
      * --creare un vettore di residui r(y)=y-qc(y) per ogni y
      * --quantizzare con pq r(y)
      * 
      * -searching
-     * --creiamo 'w' vicini di x, e creiamo un vettore 'r(x)' siffatto
-     * --calcola la distanza tra r(x) nei suoi sottovettori e tutti i centroidi
-     * --calcolare la radice della distanza tra r(x) e r(y) quantizzata
-     * --scegliere K vicini piccoli per risultato
+     * --creiamo un vettore 'r(x)': con  'w' vicini di x ( e le loro distanze da x)
+     * --calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli
      */
 
+    int i,c=0,j,imax,h,icent,z,dstar=d/m;
+
+    float distmax=-1,tmp;
+    
+    float *data_min=(float*)(malloc(sizeof(float)*nr*d)), // dataset ridotto 
+            *ry=(float*)(malloc(sizeof(float)*nr*d)), // vettore residui -> y-qc(y) valori
+            *diffx=(float*)(malloc(sizeof(float)*w));
+        double *ANN_values=(double*)(sizeof(double)*K);
+    
+    int *pqy=(int*)(malloc(sizeof(int)*m*nr)), //pq(y-qc(y)) (indici,mappa)
+    *rx=(int*)(malloc(sizeof(int)*w)), //contiene gli indici dei w centroidi più vicini a x
+    *map=(int*)(malloc(sizeof(int)*nr)); 
+
+    //notExaustiveIndexing
+    //creazione dataset ridotto
+    for(i=0;i<nr*d;i++){
+        data_min[i]=ds[i];
+    }
+
+    pq(d,1,k,codebook,nr,data_min,map); //map=qc(y)
+
+    for(i=0;i<nr;i++){
+        //differenza(y,qc(y))
+        diffvf(d,data_min,i*d,codebook,map[i]*d,ry,i*d);
+    }
+
+    pq(d,m,k,codebook,nr,ry,pqy); // pqy=pq(y)
+
+    //notExaustiveSearching
+
+    if(symmetric){
+        //SDC
+        for(i=0;i<nq;i++){
+            centroidi_associati(d,w,qs,i,k,codebook,rx);
+
+        }//i
+    }else{
+        //ADC
+        for(i=0;i<nq;i++){
+            centroidi_associati(d,w,qs,i,k,codebook,rx);
+        }//i
+    }
+
+    free(data_min);
+    free(ry);
+
 }
+
+/*
+        
+
+        imax=-1;
+
+        //ANDIAMO A CALCOLARE LE DISTANZE  
+        for(j=0;j<w&&c<K;j++){ //considerato un centroide di x
+            diffvf(d,qs,i*d,codebook,rx[j*2+1]*d,diffx,0);
+            for(h=0;h<nr&&c<K;h++){ //considerare un punto y del dataset ridotto
+                tmp=0;
+                icent=map[h]; // il centroide associato a y
+                if(icent==rx[2*j+1]){ //se quel centroide è lo stesso di x
+                    for(z=0;z<m;z++){ //per ogni sotto-vettore
+                        icent=pqy[h*m+z];
+                        tmp+= dist_2(dstar,diffx,z*dstar,codebook,icent*d+z*dstar);
+                    }
+
+                    tmp=sqrt(tmp);
+                    ANN_values[c]=tmp;
+                    ANN[K*i+c]=h;
+                    if(imax==-1){
+                        distmax=tmp;
+                        imax=c;
+                    }else{
+                        if(distmax<tmp){
+                            distmax=tmp;
+                            imax=c;
+                        }
+                    }
+                    c++;
+                }
+            }//for h
+        }//for j
+        for(;j<w;j++){
+            diffvf(d,qs,i*d,codebook,rx[j*2+1]*d,diffx,0);
+            for(h=0;h<nr;h++){ //considerare un punto y del dataset ridotto
+                tmp=0;
+                icent=map[h]; // il centroide associato a y
+                if(icent==rx[2*j+1]){ //se quel centroide è lo stesso di x
+                    for(z=0;z<m;z++){ //per ogni sotto-vettore
+                        icent=pqy[h*m+z];
+                        tmp+= dist_2(dstar,diffx,z*dstar,codebook,icent*d+z*dstar);
+                    }
+                    tmp=sqrt(tmp);
+                    
+                    if(distmax>tmp){
+                        //inserire il nuovo valore più piccolo del max
+                        ANN_values[imax]=tmp;
+                        ANN[K*i+imax]=h;
+                        distmax=tmp; //assegnazione temporanea
+                        //ricercare nuovo max
+                        for(z=0;z<K;z++){
+                            if(distmax<ANN_values[z]){
+                                distmax=ANN_values[z];
+                                imax=z;
+                            }
+                        }//for z
+                    }
+                }
+            }
+        }
+        //abbiamo i K(nn) per il qs x
+        mergeSort(ANN_values,ANN,0,K-1,K*i);
+
+
+*/
