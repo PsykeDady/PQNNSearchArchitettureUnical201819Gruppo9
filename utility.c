@@ -1175,8 +1175,10 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
     
     float *data_min=(float*)(malloc(sizeof(float)*nr*d)), // dataset ridotto 
             *ry=(float*)(malloc(sizeof(float)*nr*d)), // vettore residui -> y-qc(y) valori
-            *diffx=(float*)(malloc(sizeof(float)*w));
-        double *ANN_values=(double*)(sizeof(double)*K);
+            *diffx=(float*)(malloc(sizeof(float)*w)),
+            *qx=(float*)(malloc(sizeof(float)*d*w)); //realizza x-qy per tutte le w qy
+        double *ANN_values=(double*)(sizeof(double)*K),
+            *distanze;
     
     int *pqy=(int*)(malloc(sizeof(int)*m*nr)), //pq(y-qc(y)) (indici,mappa)
     *rx=(int*)(malloc(sizeof(int)*w)), //contiene gli indici dei w centroidi più vicini a x
@@ -1201,14 +1203,36 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
 
     if(symmetric){
         //SDC
+        //matrice delle differenze
+        distanze=(double*)(malloc(sizeof(double)*k*k*m));
         for(i=0;i<nq;i++){
             centroidi_associati(d,w,qs,i,k,codebook,rx);
+            //associare un centroide a x -> qx=vq(x)
+            //salvare distanza qx-qy
+            //scorrere il dataset ridotto
+            ///se y è associato ad un centroide E ad rx
 
+
+            
         }//i
     }else{
         //ADC
+        distanze=(double*)(malloc(sizeof(double)*k*m));
         for(i=0;i<nq;i++){
             centroidi_associati(d,w,qs,i,k,codebook,rx);
+            c=0;
+            for(h=0;h<w;h++){
+                //per ogni centroide associato
+                diffvf(d,qs,i*d,codebook,rx[h],qx,c++*d); 
+            }
+
+            c=0;
+            for(j=0;j<k;j++){//per ogni punto del codebook
+                for(w=0;w<m;w++){//ogni sottovettore
+                    
+                    distanze[c++]=(double)(dist_2(dstar,qx,/*una matrice per ogni centroide associato????*/,codebook,j*d+w*dstar));
+                }
+        }
         }//i
     }
 
