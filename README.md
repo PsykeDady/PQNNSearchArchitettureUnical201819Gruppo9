@@ -12,8 +12,9 @@
 * Gianpaolo Cascardo
 * Maria Chiara Nicoletti
 
-**TODO:**
+### TODO/~~DONE~~:
 
+#### ~~Codice C~~
 * ~~creazione progetto su github~~
 * ~~distanza euclidea -> dist(x,y) : sqrt((Sommatoria(xi,yi))^2)~~
 * ~~mindist(int* x, int* dataset)~~
@@ -36,11 +37,31 @@
 * ~~ANN esaustiva~~
   * ~~distanza simmetrica o SDC(x,y): SQRT(Sommatoria(distanza(q(x),q(y))^2)), tenendo in memoria l'insieme di distanze tra ogni centroide~~
   * ~~distanza asimmetrita o ADC(x,y): SQRT(Sommatoria(distanza(x,q(y))^2)),    tenendo in memoria per ogni diversa x le distanze da ogni centroide~~
-* ANN non esaustiva
+* ~~ANN non esaustiva~~
   * ~~calcolo residui : r(y)=y-q(y)~~
   * ~~quantizzare con pq r(y)~~
   * ~~creiamo un vettore 'r(x)': con  'w' vicini di x ( e le loro distanze da x)~~
-  * calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli
-  
-* sostituire in SDC la struttura distanze con una struttura dove la cella [ i , j , m ] accede alla distanza tra il centroide i, il centroide j e sottocentroide w. 
-* unire il codice ai template dati da Angiulli (64-32bit), preparare i dati come matrice ANN 
+  * ~~calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli~~
+  * ~~con SDC~~
+  * ~~con ADC~~
+
+#### ASSEMBLY
+
+* scrivere metodo dist_2 in assembly
+  * 64bit
+  * 32bit 
+* scrivere metodo distq
+  * 64bit
+  * 32bit 
+* scrivere metodo diffvf
+  * 64bit
+  * 32bit 
+
+#### DOCUMENTAZIONE E MACRO ( a primo punto assembly finito && da iniziare entro 17 giugno )
+* scrivere e controllare descrizioni dei metodi c
+* scrivere e controllare descrizioni dei metodi assembly32
+* scrivere e controllare descrizioni dei metodi assembly64
+
+#### RELAZIONI (da iniziare 20 giugno)
+
+

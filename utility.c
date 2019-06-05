@@ -41,11 +41,14 @@
     //#define DEBUG_ADC
     //#define DEBUG_ANNADC
     //#define DEBUG_NOTEXAUSTIVE
+    //#define DEBUG_TIME
 #endif
 
 //#### LISTA MACRO ####
 /** calcola l'indice di una matrice quadrata vettorizzata */
 #define MATRIX3_INDEX(K,M,I,J,W) I*K*M+J*M+W
+/** indice ultima cella riga i-esima di una matrice con larghezza d*/
+#define LAST_INDEX(D,I) ((I+1)*D-1)
 
 //template debug da incollare ogni metodo:
 /* #ifdef DEBUG_
@@ -859,7 +862,7 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     for( i=0; i<k;i++){
         //centroide i
         for(w=0;w<m;w++) 
-            distanze[MATRIX3_INDEX(k,m,i,i,w)]=0;
+            distanze[MATRIX3_INDEX(k,m,i,i,w)]=0; 
         for( j=i+1;j<k;j++){
             //centroide j
             #ifdef DEBUG_ANNSDC
@@ -893,10 +896,10 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
         printiv(m,icent,0);
     #endif
 
-    free(icent);
     #ifdef DEBUG_ANNSDC
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'ANNSDC' #####\n");
     #endif
+    free(icent);
 
 }//ANNSDC
 
@@ -1163,26 +1166,31 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
      * --associare ogni punto y del dataset ad un centroide con vq
      * --creare un vettore di residui r(y)=y-qc(y) per ogni y
      * --quantizzare con pq r(y)
+     * --creiamo codemap (inverted list), una struttura k*(nr+1) che conserva per ogni centroide una lista di punti a lui associati (lista di indici)
+     * ---nel farlo verra visitato il codebook e per ogni centroide verranno memorizzati in cella i-esima un indice di un punto  a lui associato, mentre in cella [nr] ( o nr+1 se non si parte da 0) il numero di elementi associati a quel centroide
      * 
      * -searching
      * --creiamo un vettore 'r(x)': con  'w' vicini di x ( e le loro distanze da x)
      * --calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli
      */
 
-    int i,c=0,j,imax,h,icent,z,dstar=d/m;
+    int i,c=0,j,imax,h,icent,icent2,icent3,icent4,t,z=0,dstar=d/m;
 
-    float distmax=-1,tmp;
+    double vmax=-1;
+    double tmp;
     
     float *data_min=(float*)(malloc(sizeof(float)*nr*d)), // dataset ridotto 
             *ry=(float*)(malloc(sizeof(float)*nr*d)), // vettore residui -> y-qc(y) valori
-            *diffx=(float*)(malloc(sizeof(float)*w)),
+            *diffx=(float*)(malloc(sizeof(float)*w*d)),
             *qx=(float*)(malloc(sizeof(float)*d*w)); //realizza x-qy per tutte le w qy
         double *ANN_values=(double*)(sizeof(double)*K),
             *distanze;
     
     int *pqy=(int*)(malloc(sizeof(int)*m*nr)), //pq(y-qc(y)) (indici,mappa)
     *rx=(int*)(malloc(sizeof(int)*w)), //contiene gli indici dei w centroidi più vicini a x
-    *map=(int*)(malloc(sizeof(int)*nr)); 
+    *map=(int*)(malloc(sizeof(int)*nr)),
+    *codemap=(int*)(malloc(sizeof(int) * (nr+1) * k)),
+    *mapx=(int*)(malloc(sizeof(int) *w*m)); 
 
     //notExaustiveIndexing
     //creazione dataset ridotto
@@ -1199,45 +1207,245 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
 
     pq(d,m,k,codebook,nr,ry,pqy); // pqy=pq(y)
 
+    // creazione codemap
+    for(i=1;i<=k;i++) codemap[i*nr-1]=0;// azzera l'ultima cella di icent 
+    for(i=0;i<nr;i++){
+        //per ogni punto del dataset ridotto
+        icent=map[i];
+        c=codemap[(icent+1)*nr-1]; // accede all'ultima cella di icent
+        codemap[icent*nr+c]=i;
+        codemap[(icent+1)*nr-1]=c+1;
+    }
+
     //notExaustiveSearching
 
     if(symmetric){
         //SDC
         //matrice delle differenze
         distanze=(double*)(malloc(sizeof(double)*k*k*m));
+        for( i=0; i<k;i++){
+            //centroide i
+            for(h=0;h<m;h++) 
+                distanze[MATRIX3_INDEX(k,m,i,i,h)]=0;
+            for( j=i+1;j<k;j++){
+                //centroide j
+                #ifdef DEBUG_NOTEXAUSTIVE
+                    printf("distanza tra i=%i e j=%i\n",i,j);
+                #endif
+                for(h=0;h<m;h++){
+                    #ifdef DEBUG_NOTEXAUSTIVE
+                        printf("sottovettore %i\n",h);
+                    #endif
+                    tmp=(double)(dist_2(dstar,codebook,d*i+h*dstar,codebook,d*j+h*dstar)); //distanze al quadrato
+                    distanze[MATRIX3_INDEX(k,m,i,j,h)]=tmp;
+                    distanze[MATRIX3_INDEX(k,m,j,i,h)]=tmp;
+                    #ifdef DEBUG_NOTEXAUSTIVE
+                        printf("distanze[%i]=%lf\n\n",,distanze[]);
+                    #endif
+                }//h
+            }//js
+        }//i
         for(i=0;i<nq;i++){
+            //punti query set
             centroidi_associati(d,w,qs,i,k,codebook,rx);
-            //associare un centroide a x -> qx=vq(x)
-            //salvare distanza qx-qy
-            //scorrere il dataset ridotto
-            ///se y è associato ad un centroide E ad rx
+            z=0;
+            for( j=0 ; j< w; j++) {
+                diffvf(d,qs,i*d,codebook,rx[j],diffx,j*d);
+            }
+            pq(d,m,k,codebook,w,diffx,mapx);
+            for( j=0 ; j< w && z<K; j++){
+                //w centroidi di x
+                icent=rx[j];
+                c=codemap[LAST_INDEX(nr,icent)];
+                for(h=0;h<c && z<K;h++){
+                    tmp=0;
+                    //punti vicini a centroide
+                    for(t=0;t<m;t++){
+                        icent2=mapx[j*m+t];
+                        icent3=codemap[icent*(nr+1)+h];
+                        icent4=pqy[icent3*m+t];
+                        tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                    }
+                    ANN[i*K+z]=z;
+                    tmp=sqrt(tmp);
+                    ANN_values[z]=tmp;
+                    if(vmax<tmp){
+                        vmax=tmp;
+                        imax=z;
+                    }
+                    z++;
+                }
+            }
+            for(;h<c;h++){
+                tmp=0;
+                //punti vicini a centroide
+                for(t=0;t<m;t++){
+                    icent2=mapx[j*m+t];
+                    icent3=codemap[icent*(nr+1)+h];
+                    icent4=pqy[icent3*m+t];
+                    tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                }
+                tmp=sqrt(tmp);
+                if(vmax>tmp){
+                    //entrata in ANN del valore
+                    ANN[i*K+imax]=j;
+                    ANN_values[imax]=tmp;
 
+                    //ricerca del nuovo massimo
+                    vmax=tmp;
+                    for(t=0;t<K;t++){
+                        if(vmax<ANN_values[t]){
+                            vmax=ANN_values[t];
+                            imax=t;
+                        }
+                    }
+                }//if
+            }
+            for(; j< w; j++){
+                //w centroidi di x
+                icent=rx[j];
+                c=codemap[LAST_INDEX(nr,j)];
+                for(h=0;h<c;h++){
+                    tmp=0;
+                    //punti vicini a centroide
+                    for(t=0;t<m;t++){
+                        icent2=mapx[j*m+t];
+                        icent3=codemap[icent*(nr+1)+h];
+                        icent4=pqy[icent3*m+t];
+                        tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                    }
+                    tmp=sqrt(tmp);
+                    if(vmax>tmp){
+                        //entrata in ANN del valore
+                        ANN[i*K+imax]=j;
+                        ANN_values[imax]=tmp;
 
-            
+                        //ricerca del nuovo massimo
+                        vmax=tmp;
+                        for(t=0;t<K;t++){
+                            if(vmax<ANN_values[t]){
+                                vmax=ANN_values[t];
+                                imax=t;
+                            }
+                        }
+                    }//if
+                }//for h
+            }//for j
+            mergeSort(ANN_values,ANN,0,K-1,i*K);
         }//i
     }else{
         //ADC
+        //matrice delle differenze
         distanze=(double*)(malloc(sizeof(double)*k*m));
         for(i=0;i<nq;i++){
+            //punti query set
             centroidi_associati(d,w,qs,i,k,codebook,rx);
-            c=0;
-            for(h=0;h<w;h++){
-                //per ogni centroide associato
-                diffvf(d,qs,i*d,codebook,rx[h],qx,c++*d); 
+            z=0;
+            for( j=0 ; j< w; j++) {
+                diffvf(d,qs,i*d,codebook,rx[j],diffx,j*d);
             }
-
-            c=0;
-            for(j=0;j<k;j++){//per ogni punto del codebook
-                for(w=0;w<m;w++){//ogni sottovettore
-                    
-                    distanze[c++]=(double)(dist_2(dstar,qx,/*una matrice per ogni centroide associato????*/,codebook,j*d+w*dstar));
+            for( j=0 ; j< w && z<K; j++){
+                c=0;
+                for(t=0;t<k;t++){//per ogni punto del codebook
+                    for(h=0;h<m;h++){//ogni sottovettore
+                        distanze[c++]=(double)(dist_2(dstar,diffx,j*d+h*dstar,codebook,t*d+h*dstar));
+                    }
                 }
-        }
+                //w centroidi di x
+                icent=rx[j];
+                c=codemap[LAST_INDEX(nr,icent)];
+                for(h=0;h<c && z<K;h++){
+                    tmp=0;
+                    //punti vicini a centroide
+                    for(t=0;t<m;t++){
+                        icent3=codemap[icent*(nr+1)+h];
+                        icent4=pqy[icent3*m+t];
+                        tmp+=distanze[icent4*m+t];
+                    }
+                    ANN[i*K+z]=z;
+                    tmp=sqrt(tmp);
+                    ANN_values[z]=tmp;
+                    if(vmax<tmp){
+                        vmax=tmp;
+                        imax=z;
+                    }
+                    z++;
+                }
+            }
+            for(;h<c;h++){
+                tmp=0;
+                //punti vicini a centroide
+                for(t=0;t<m;t++){
+                    icent3=codemap[icent*(nr+1)+h];
+                    icent4=pqy[icent3*m+t];
+                    tmp+=distanze[icent4*m+t];
+                }
+                tmp=sqrt(tmp);
+                if(vmax>tmp){
+                    //entrata in ANN del valore
+                    ANN[i*K+imax]=j;
+                    ANN_values[imax]=tmp;
+
+                    //ricerca del nuovo massimo
+                    vmax=tmp;
+                    for(t=0;t<K;t++){
+                        if(vmax<ANN_values[t]){
+                            vmax=ANN_values[t];
+                            imax=t;
+                        }
+                    }
+                }//if
+            }
+            for(; j< w; j++){
+                c=0;
+                for(t=0;t<k;t++){//per ogni punto del codebook
+                    for(h=0;h<m;h++){//ogni sottovettore
+                        distanze[c++]=(double)(dist_2(dstar,diffx,j*d+h*dstar,codebook,t*d+h*dstar));
+                    }
+                }
+                //w centroidi di x
+                icent=rx[j];
+                c=codemap[LAST_INDEX(nr,j)];
+                for(h=0;h<c;h++){
+                    tmp=0;
+                    //punti vicini a centroide
+                    for(t=0;t<m;t++){
+                        icent3=codemap[icent*(nr+1)+h];
+                        icent4=pqy[icent3*m+t];
+                        tmp+=distanze[icent4*m+t];
+                    }
+                    tmp=sqrt(tmp);
+                    if(vmax>tmp){
+                        //entrata in ANN del valore
+                        ANN[i*K+imax]=j;
+                        ANN_values[imax]=tmp;
+
+                        //ricerca del nuovo massimo
+                        vmax=tmp;
+                        for(t=0;t<K;t++){
+                            if(vmax<ANN_values[t]){
+                                vmax=ANN_values[t];
+                                imax=t;
+                            }
+                        }
+                    }//if
+                }//for h
+            }//for j
+            mergeSort(ANN_values,ANN,0,K-1,i*K);
         }//i
     }
 
-    free(data_min);
+    free(distanze);
+    free(mapx);
+    free(codemap);
+    free(map);
+    free(rx);
+    free(pqy);
+    free(ANN_values);
+    free(qx);
+    free(diffx);
     free(ry);
+    free(data_min);
 
 }
 

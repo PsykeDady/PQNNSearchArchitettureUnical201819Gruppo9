@@ -239,8 +239,12 @@ void pqnn_search(params* input) {
 int main(int argc, char** argv) {
 
 	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
-	//srand(time(NULL));
-	srand(4444);
+	time_t random=time(NULL);
+	#ifdef DEBUG_TIME
+		random=4444;
+	#endif
+	printf("seme casuale:%i\n",random);
+	srand(random);
 	
 	char fname[256];
 	int i, j;
@@ -252,8 +256,8 @@ int main(int argc, char** argv) {
 	params* input = malloc(sizeof(params));
 
 	input->filename = NULL;
-	input->exaustive = 1;
-	input->symmetric = 1;
+	input->exaustive = 0;
+	input->symmetric = 0;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
