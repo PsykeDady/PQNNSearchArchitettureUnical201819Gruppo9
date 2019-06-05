@@ -10,7 +10,7 @@
 #include <time.h>
 
 
-
+//extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
