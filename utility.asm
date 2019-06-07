@@ -47,7 +47,7 @@ LOOPQ:
     mov     eax, [ebp+20] ; eax= [y]
     subps  xmm1, [eax+edx*4];xmm1=x[edx]=x + edx
 
-;elevamento al quadrato di xmm1, aggiunta in xmm0 e incremento di i
+;elevamento al quadrato di xmm1, aggiunta in xmm0 e incremento di i + 4
     mulps   xmm1,xmm1;xmm1*=xmm1
     addps   xmm0,xmm1;somma+=xmm1
     add     edi, 4
@@ -72,6 +72,10 @@ LOOPR:
     add     edx, edi ; edx=yi+i
     mov     eax, [ebp+20] ; eax= [y]
     subss  xmm1, [eax+edx*4];xmm1=x[edx]=x + edx 
+
+;elevamento al quadrato di xmm1, aggiunta in xmm0 e incremento di i + 1
+    mulss   xmm1,xmm1;xmm1*=xmm1
+    addss   xmm0,xmm1;somma+=xmm1    
     inc edi
 
 END:
