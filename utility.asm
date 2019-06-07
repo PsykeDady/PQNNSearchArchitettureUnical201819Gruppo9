@@ -79,6 +79,9 @@ LOOPR:
     inc edi
 
 END:
+
+    haddps xmm0, xmm0   ; per spostare la somma totale nella prima cella di xmm0
+    haddps xmm0, xmm0   ; idem sopra
     ;i==d
     ; somma è già xmm0, e xmm0 è il valore che contiene il return value
     ; mov eax, [ebp+8] ;vedi riga sotto
