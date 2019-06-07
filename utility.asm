@@ -33,7 +33,7 @@ dist_2_asm:
 LOOPQ:
     
     cmp edi, esi ; i<d-p+1? // da provare se è possibile fare direttamente [ebp+8]-4+1
-    jge ENDQ
+    jge LOOPR
 
 ;inserimento x in xmm1 (packed)
     mov      edx, [ebp+16] ; edx=xi
@@ -53,9 +53,7 @@ LOOPQ:
     add     edi, 4
     jmp     LOOPQ
 
-ENDQ:
-    cmp edi, [ebp+8] ; i == d?
-    je  END
+
 
 LOOPR:
     cmp edi, [ebp+8] ; i<d?
@@ -77,6 +75,7 @@ LOOPR:
     mulss   xmm1,xmm1;xmm1*=xmm1
     addss   xmm0,xmm1;somma+=xmm1    
     inc edi
+    jmp LOOPR
 
 END:
 

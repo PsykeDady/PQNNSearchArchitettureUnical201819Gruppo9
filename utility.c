@@ -10,7 +10,7 @@
 #include <time.h>
 
 
-//extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
+extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
@@ -76,7 +76,7 @@
  */
 float dist_2(int d, float *x, int xi, float *y, int yi){
     
-    #ifdef DEBUG_DIST2
+   /*  #ifdef DEBUG_DIST2
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist2' #####\n");
     #endif
 
@@ -99,7 +99,8 @@ float dist_2(int d, float *x, int xi, float *y, int yi){
         somma+=differenza;
         #ifdef DEBUG_DIST2
             printf("%f\n\n",somma);
-        #endif
+        #endif */
+        dist_2_asm(d, x, xi, y, yi);
     }
 
     #ifdef DEBUG_DIST2
@@ -1195,9 +1196,13 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
     
     int *pqy=(int*)(assegna_blocco(sizeof(int),m*nr)), //pq(y-qc(y)) (indici,mappa)
     *rx=(int*)(assegna_blocco(sizeof(int),w)), //contiene gli indici dei w centroidi più vicini a x
-    *map=(int*)(assegna_blocco(sizeof(int),nr)),
-    *codemap=(int*)(assegna_blocco(sizeof(int),(nr+1)*k)),
+    //*map=(int*)(assegna_blocco(sizeof(int),nr)),
+    //*codemap=(int*)(assegna_blocco(sizeof(int),(nr+1)*k)),
     *mapx=(int*)(assegna_blocco(sizeof(int),w*m)); 
+
+    int
+        map[nr],
+        codemap[(nr+1)*k];
 
     //notExaustiveIndexing
     //creazione dataset ridotto
