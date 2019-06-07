@@ -45,8 +45,6 @@
 #include <string.h>
 #include <time.h>
 #include <xmmintrin.h>
-//aggiunto dal team 9
-#include "utility.c"
 
 
 
@@ -88,7 +86,6 @@ typedef struct {
 } params;
 
 
-
 /*
  * 
  *	Le funzioni sono state scritte assumento che le matrici siano memorizzate 
@@ -113,6 +110,9 @@ void free_block(void* p) {
 	_mm_free(p);
 }
 
+//aggiunto dal team9
+#define ANGIULLI
+#include "utility.c"
 
 MATRIX alloc_matrix(int rows, int cols) {
 	return (MATRIX) get_block(sizeof(float),rows*cols);
@@ -133,8 +133,8 @@ void dealloc_matrix(MATRIX mat) {
  * 	e M colonne e la memorizza in un array lineare in row-major order
  * 
  * 	Codifica del file:
- * 	primi 4 byte: numero di colonne (M) --> numero intero a 32 bit
- * 	successivi 4 byte: numero di righe (N) --> numero intero a 32 bit
+ * 	primi 4 byte numero di colonne (M): --> numero intero a 32 bit
+ * 	successivi 4 byte: numero di righe (N)  --> numero intero a 32 bit
  * 	successivi N*M*4 byte: matrix data in row-major order --> numeri floating-point a precisione doppia
  * 
  *****************************************************************************
@@ -184,8 +184,8 @@ void save_ANN(char* filename, int* ANN, int nq, int knn) {
 }
 
 
-extern void pqnn32_index(params* input);
-extern int* pqnn32_search(params* input);
+// extern void pqnn64_index(params* input);
+// extern int* pqnn64_search(params* input);
 
 
 /*
@@ -212,10 +212,6 @@ void pqnn_index(params* input) {
  * 	===========
  */
 void pqnn_search(params* input) {
-
-	//VA INIZIALIZZATO ANN vettore di k valori
-
-	
 	
     // -------------------------------------------------
     // Codificare qui l'algoritmo di interrogazione
@@ -241,7 +237,12 @@ void pqnn_search(params* input) {
 
 int main(int argc, char** argv) {
 	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
-	srand(time(NULL));
+	time_t random=time(NULL);
+	#ifdef DEBUG_TIME
+		random=4444;
+	#endif
+	printf("seme casuale:%i\n",random);
+	srand(random);
 	
 	char fname[256];
 	int i, j;
@@ -429,8 +430,8 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
-	input->codebook=(float*)(malloc(sizeof(float)*input->k*input->d));
-	input->map=(int*)(malloc(sizeof(int)*(input->m*input->n)));
+	input->codebook=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->map=(int*)(get_block(sizeof(int),input->m*input->n));
 	
 	clock_t t = clock();
 	pqnn_index(input);
@@ -455,6 +456,7 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
+	matprintmi(input->knn,input->nq,input->ANN);
 	
 	//
 	// Salva gli ANN
@@ -474,8 +476,8 @@ int main(int argc, char** argv) {
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
 
-	free(input->codebook);
-	free(input->map);
+	free_block(input->codebook);
+	free_block(input->map);
 	
 	if (!input->silent)
 		printf("\nDone.\n");

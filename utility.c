@@ -44,6 +44,13 @@
     //#define DEBUG_TIME
 #endif
 
+//#ifdef ANGIULLI
+    #define ALLIGN 
+    void* assegna_blocco(int size, int elements) { 
+        return malloc(elements*size); 
+    }
+//#endif
+
 //#### LISTA MACRO ####
 /** calcola l'indice di una matrice quadrata vettorizzata */
 #define MATRIX3_INDEX(K,M,I,J,W) I*K*M+J*M+W
@@ -407,7 +414,7 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
      */
     int i,icent,z,w,c,j,dstar=d/m;
     float*nc;
-    nc=(float*)(malloc(sizeof(float)*d));
+    nc=(float*)(assegna_blocco(sizeof(float),d));
 
     for( i=0; i<k; i++){ // per ogni centroide
         #ifdef DEBUG_NUOVICENTROIDI
@@ -848,7 +855,7 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
     int i,j,w;
     /**
      */ 
-    int * icent= (int*)(malloc(sizeof(int)*m));
+    int * icent= (int*)(assegna_blocco(sizeof(int),m));
     /**
      * matrice cubica dove :
      *  -ogni riga corrisponde al vettore i-esimo
@@ -1100,7 +1107,7 @@ void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, int n, int*map
 void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, int*rx){
     int j,imax,h;
     float distmax=-1,tmp;
-    float *rx_values=(float*)(malloc(sizeof(float)*w));
+    float *rx_values=(float*)(assegna_blocco(sizeof(float),w));
     //per ogni punto query, vanno memorizzati i w centroidi vicini e la loro distanza
     
     //INIZIO RICERCA W
@@ -1179,18 +1186,18 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
     double vmax=-1;
     double tmp;
     
-    float *data_min=(float*)(malloc(sizeof(float)*nr*d)), // dataset ridotto 
-            *ry=(float*)(malloc(sizeof(float)*nr*d)), // vettore residui -> y-qc(y) valori
-            *diffx=(float*)(malloc(sizeof(float)*w*d)),
-            *qx=(float*)(malloc(sizeof(float)*d*w)); //realizza x-qy per tutte le w qy
-        double *ANN_values=(double*)(sizeof(double)*K),
-            *distanze;
+    float *data_min=(float*)(assegna_blocco(sizeof(float),nr*d)), // dataset ridotto 
+          *ry=(float*)(assegna_blocco(sizeof(float),nr*d)), // vettore residui -> y-qc(y) valori
+          *diffx=(float*)(assegna_blocco(sizeof(float),w*d)),
+          *qx=(float*)(assegna_blocco(sizeof(float),d*w)); //realizza x-qy per tutte le w qy
+        double *ANN_values=(double*)(assegna_blocco(sizeof(double),K)),
+               *distanze;
     
-    int *pqy=(int*)(malloc(sizeof(int)*m*nr)), //pq(y-qc(y)) (indici,mappa)
-    *rx=(int*)(malloc(sizeof(int)*w)), //contiene gli indici dei w centroidi più vicini a x
-    *map=(int*)(malloc(sizeof(int)*nr)),
-    *codemap=(int*)(malloc(sizeof(int) * (nr+1) * k)),
-    *mapx=(int*)(malloc(sizeof(int) *w*m)); 
+    int *pqy=(int*)(assegna_blocco(sizeof(int),m*nr)), //pq(y-qc(y)) (indici,mappa)
+    *rx=(int*)(assegna_blocco(sizeof(int),w)), //contiene gli indici dei w centroidi più vicini a x
+    *map=(int*)(assegna_blocco(sizeof(int),nr)),
+    *codemap=(int*)(assegna_blocco(sizeof(int),(nr+1)*k)),
+    *mapx=(int*)(assegna_blocco(sizeof(int),w*m)); 
 
     //notExaustiveIndexing
     //creazione dataset ridotto
@@ -1222,7 +1229,7 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
     if(symmetric){
         //SDC
         //matrice delle differenze
-        distanze=(double*)(malloc(sizeof(double)*k*k*m));
+        distanze=(double*)(assegna_blocco(sizeof(double),k*k*m));
         for( i=0; i<k;i++){
             //centroide i
             for(h=0;h<m;h++) 
@@ -1336,7 +1343,7 @@ void notExaustive(int d,int m,int nr,int w, int symmetric,int n,float*ds,int k, 
     }else{
         //ADC
         //matrice delle differenze
-        distanze=(double*)(malloc(sizeof(double)*k*m));
+        distanze=(double*)(assegna_blocco(sizeof(double),k*m));
         for(i=0;i<nq;i++){
             //punti query set
             centroidi_associati(d,w,qs,i,k,codebook,rx);

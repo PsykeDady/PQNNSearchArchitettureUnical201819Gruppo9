@@ -45,8 +45,6 @@
 #include <string.h>
 #include <time.h>
 #include <xmmintrin.h>
-//aggiunto dal team9
-#include "utility.c"
 
 
 
@@ -84,7 +82,6 @@ typedef struct {
 	MATRIX codebook;
 	int * map;
 	// ...
-	// ...
 	//
 } params;
 
@@ -105,7 +102,7 @@ typedef struct {
 
 
 void* get_block(int size, int elements) { 
-	return _mm_malloc(elements*size,32); 
+	return _mm_malloc(elements*size,16); 
 }
 
 
@@ -113,6 +110,9 @@ void free_block(void* p) {
 	_mm_free(p);
 }
 
+//aggiunto dal team9
+#define ANGIULLI
+#include "utility.c"
 
 MATRIX alloc_matrix(int rows, int cols) {
 	return (MATRIX) get_block(sizeof(float),rows*cols);
@@ -197,13 +197,14 @@ void pqnn_index(params* input) {
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
+    //pqnn64_index(input); // Chiamata funzione assembly
+	int n=input->nr;
+    if(input->exaustive){
+		n=input->n;
+	}
+	init_codebook(input->d,n,input->ds,input->k,input->codebook);
 	
-	//pqnn64_index(input); // Chiamata funzione assembly
-    init_codebook(input->d,input->n,input->ds,input->k,input->codebook);
-	
-	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,input->n,input->ds,input->map);
-
-
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,n,input->ds,input->map);
     // -------------------------------------------------
 
 }
@@ -220,13 +221,17 @@ void pqnn_search(params* input) {
     // -------------------------------------------------
     
     //pqnn64_search(input); // Chiamata funzione assembly
-	if(input->symmetric){
-		//se simmetrica
-		ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
-	}else{
-		ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
-
+	if(input->exaustive){
+		if(input->symmetric){
+			//se simmetrica
+			ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+		}else{
+			ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+		}
 	}
+	else 
+		notExaustive(input->d,input->m,input->nr,input->w,input->symmetric,input->n,input->ds,input->k,input->codebook,input->nq,input->qs,input->knn,input->ANN);
+	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
 	// identificatori associati agli ANN approssimati delle nq query.
@@ -237,7 +242,6 @@ void pqnn_search(params* input) {
 
 
 int main(int argc, char** argv) {
-
 	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
 	time_t random=time(NULL);
 	#ifdef DEBUG_TIME
@@ -257,7 +261,7 @@ int main(int argc, char** argv) {
 
 	input->filename = NULL;
 	input->exaustive = 0;
-	input->symmetric = 0;
+	input->symmetric = 1;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
@@ -432,8 +436,8 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
-	input->codebook=(float*)(malloc(sizeof(float)*input->k*input->d));
-	input->map=(int*)(malloc(sizeof(int)*(input->m*input->n)));
+	input->codebook=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->map=(int*)(get_block(sizeof(int),input->m*input->n));
 	
 	clock_t t = clock();
 	pqnn_index(input);
@@ -453,7 +457,6 @@ int main(int argc, char** argv) {
 	t = clock();
 	pqnn_search(input);
 	t = clock() - t;
-
 	
 	if (!input->silent)
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
@@ -479,9 +482,8 @@ int main(int argc, char** argv) {
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
 
-
-	free(input->codebook);
-	free(input->map);
+	free_block(input->codebook);
+	free_block(input->map);
 	
 	if (!input->silent)
 		printf("\nDone.\n");
