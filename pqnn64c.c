@@ -50,6 +50,7 @@
 
 #define	MATRIX		float*
 #define	VECTOR		float*
+#define DEBUG_TIME
 
 
 typedef struct {
@@ -79,8 +80,10 @@ typedef struct {
 	//
 	// Inserire qui i campi necessari a memorizzare i Quantizzatori
 	//
-	MATRIX codebook;
+	MATRIX codebookp;
+	MATRIX codebookc;
 	int * map;
+	int * mapc;
 	// ...
 	//
 } params;
@@ -198,13 +201,16 @@ void pqnn_index(params* input) {
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
     //pqnn64_index(input); // Chiamata funzione assembly
-	int n=input->nr;
-    if(input->exaustive){
-		n=input->n;
+	int n=input->n;
+    if(! input->exaustive){
+		n=input->nr;
+		init_codebook(input->d,n,input->ds,input->kc,input->codebookc);
+		k_means(input->d,1,input->eps,input->tmin,input->tmax,input->kc,input->codebookc,n,input->ds,input->mapc);
 	}
-	init_codebook(input->d,n,input->ds,input->k,input->codebook);
+	init_codebook(input->d,n,input->ds,input->k,input->codebookp);
+
 	
-	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,n,input->ds,input->map);
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebookp,n,input->ds,input->map);
     // -------------------------------------------------
 
 }
@@ -224,13 +230,13 @@ void pqnn_search(params* input) {
 	if(input->exaustive){
 		if(input->symmetric){
 			//se simmetrica
-			ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+			ANNSDC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
 		}else{
-			ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+			ANNADC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
 		}
 	}
 	else 
-		notExaustive(input->d,input->m,input->nr,input->w,input->symmetric,input->n,input->ds,input->k,input->codebook,input->nq,input->qs,input->knn,input->ANN);
+		notExaustive(input->d,input->m,input->w,input->symmetric,input->n,input->ds,input->k,input->codebookp,input->kc,input->codebookc,input->nq,input->qs,input->knn,input->ANN);
 	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
@@ -247,7 +253,7 @@ int main(int argc, char** argv) {
 	#ifdef DEBUG_TIME
 		random=4444;
 	#endif
-	printf("seme casuale:%i\n",random);
+	printf("seme:%i\n",random);
 	srand(random);
 	
 	char fname[256];
@@ -260,7 +266,7 @@ int main(int argc, char** argv) {
 	params* input = malloc(sizeof(params));
 
 	input->filename = NULL;
-	input->exaustive = 0;
+	input->exaustive = 1;
 	input->symmetric = 1;
 	input->knn = 1;
 	input->m = 8;
@@ -436,7 +442,8 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
-	input->codebook=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->codebookp=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->codebookc=(float*)(get_block(sizeof(float),input->kc*input->d));
 	input->map=(int*)(get_block(sizeof(int),input->m*input->n));
 	
 	clock_t t = clock();
@@ -482,7 +489,8 @@ int main(int argc, char** argv) {
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
 
-	free_block(input->codebook);
+	free_block(input->codebookp);
+	free_block(input->codebookc);
 	free_block(input->map);
 	
 	if (!input->silent)
