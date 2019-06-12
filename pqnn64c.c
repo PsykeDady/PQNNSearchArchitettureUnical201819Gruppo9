@@ -266,8 +266,8 @@ int main(int argc, char** argv) {
 	params* input = malloc(sizeof(params));
 
 	input->filename = NULL;
-	input->exaustive = 1;
-	input->symmetric = 1;
+	input->exaustive = 0;
+	input->symmetric = 0;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
@@ -445,6 +445,7 @@ int main(int argc, char** argv) {
 	input->codebookp=(float*)(get_block(sizeof(float),input->k*input->d));
 	input->codebookc=(float*)(get_block(sizeof(float),input->kc*input->d));
 	input->map=(int*)(get_block(sizeof(int),input->m*input->n));
+	input->mapc=(int*)(get_block(sizeof(int),input->m*input->nr));
 	
 	clock_t t = clock();
 	pqnn_index(input);

@@ -1200,21 +1200,14 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
     
     int *pqy=(int*)(assegna_blocco(sizeof(int),m*n)), //pq(y-qc(y)) (indici,mappa)
     *rx=(int*)(assegna_blocco(sizeof(int),w)), //contiene gli indici dei w centroidi più vicini a x
-    //*map=(int*)(assegna_blocco(sizeof(int),n)),
-    //*codemap=(int*)(assegna_blocco(sizeof(int),(n+1)*k)),
+    *map=(int*)(assegna_blocco(sizeof(int),n)),
+    *codemap=(int*)(assegna_blocco(sizeof(int),(n+1)*kc)),
     *mapx=(int*)(assegna_blocco(sizeof(int),w*m)); 
 
-    int
-        /** mappa del quantizzatore coarse */
-        map[n],
-        /** memorizza per ogni centroide la lista di punti vicini (inverted list) */
-        codemap[(n+1)*kc];
+    
+
 
     //notExaustiveIndexing
-    //creazione dataset ridotto
-    /* for(i=0;i<n*d;i++){
-        data_min[i]=ds[i];
-    } */
 
     pq(d,1,kc,codebookc,n,ds,map); //map=qc(y)
 
@@ -1455,7 +1448,7 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
 
     free(mapx);
     free(codemap);
-    free(map);
+    //free(map);  //TODO FIXME controllare perche' va in segfault
     free(rx);
     free(pqy);
     free(ANN_values);
