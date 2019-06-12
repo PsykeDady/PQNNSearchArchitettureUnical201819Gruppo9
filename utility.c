@@ -1216,16 +1216,16 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
         diffvf(d,ds,i*d,codebookc,map[i]*d,ry,i*d);
     }
 
-    pq(d,m,k,codebookp,n,ry,pqy); // pqy=pq(y)
+    pq(d,m,k,codebookp,n,ry,pqy); // pqy=pq(ry)
 
     // creazione codemap
     for(i=1;i<=kc;i++) codemap[i*n-1]=0;// azzera l'ultima cella di icent 
     for(i=0;i<n;i++){
         //per ogni punto del dataset 
         icent=map[i];
-        c=codemap[(icent+1)*n-1]; // accede all'ultima cella di icent
+        c=codemap[LAST_INDEX(n,icent)]; // accede all'ultima cella di icent
         codemap[icent*n+c]=i;
-        codemap[LAST_INDEX(n,i)]=c+1;
+        codemap[LAST_INDEX(n,icent)]=c+1;
     }
 
     //notExaustiveSearching
@@ -1271,13 +1271,13 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
                 for(h=0;h<c && z<K;h++){
                     tmp=0;
                     //punti vicini a centroide
+                    icent3=codemap[icent*(n+1)+h];
                     for(t=0;t<m;t++){
                         icent2=mapx[j*m+t];
-                        icent3=codemap[icent*(n+1)+h];
                         icent4=pqy[icent3*m+t];
                         tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
                     }
-                    ANN[i*K+z]=z;
+                    ANN[i*K+z]=icent3;
                     tmp=sqrt(tmp);
                     ANN_values[z]=tmp;
                     if(vmax<tmp){
@@ -1290,16 +1290,16 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
             for(;h<c;h++){
                 tmp=0;
                 //punti vicini a centroide
+                icent3=codemap[icent*(n+1)+h];
                 for(t=0;t<m;t++){
                     icent2=mapx[j*m+t];
-                    icent3=codemap[icent*(n+1)+h];
                     icent4=pqy[icent3*m+t];
                     tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
                 }
                 tmp=sqrt(tmp);
                 if(vmax>tmp){
                     //entrata in ANN del valore
-                    ANN[i*K+imax]=j;
+                    ANN[i*K+imax]=icent3;
                     ANN_values[imax]=tmp;
 
                     //ricerca del nuovo massimo
@@ -1319,16 +1319,16 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
                 for(h=0;h<c;h++){
                     tmp=0;
                     //punti vicini a centroide
+                    icent3=codemap[icent*(n+1)+h];
                     for(t=0;t<m;t++){
                         icent2=mapx[j*m+t];
-                        icent3=codemap[icent*(n+1)+h];
                         icent4=pqy[icent3*m+t];
                         tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
                     }
                     tmp=sqrt(tmp);
                     if(vmax>tmp){
                         //entrata in ANN del valore
-                        ANN[i*K+imax]=j;
+                        ANN[i*K+imax]=icent3;
                         ANN_values[imax]=tmp;
 
                         //ricerca del nuovo massimo
@@ -1368,12 +1368,12 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
                 for(h=0;h<c && z<K;h++){
                     tmp=0;
                     //punti vicini a centroide
+                    icent3=codemap[icent*(n+1)+h];
                     for(t=0;t<m;t++){
-                        icent3=codemap[icent*(n+1)+h];
                         icent4=pqy[icent3*m+t];
                         tmp+=distanze[icent4*m+t];
                     }
-                    ANN[i*K+z]=z;
+                    ANN[i*K+z]=icent3;
                     tmp=sqrt(tmp);
                     ANN_values[z]=tmp;
                     if(vmax<tmp){
@@ -1386,15 +1386,15 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
             for(;h<c;h++){
                 tmp=0;
                 //punti vicini a centroide
+                icent3=codemap[icent*(n+1)+h];
                 for(t=0;t<m;t++){
-                    icent3=codemap[icent*(n+1)+h];
                     icent4=pqy[icent3*m+t];
                     tmp+=distanze[icent4*m+t];
                 }
                 tmp=sqrt(tmp);
                 if(vmax>tmp){
                     //entrata in ANN del valore
-                    ANN[i*K+imax]=j;
+                    ANN[i*K+imax]=icent3;
                     ANN_values[imax]=tmp;
 
                     //ricerca del nuovo massimo
@@ -1420,15 +1420,15 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
                 for(h=0;h<c;h++){
                     tmp=0;
                     //punti vicini a centroide
+                    icent3=codemap[icent*(n+1)+h];
                     for(t=0;t<m;t++){
-                        icent3=codemap[icent*(n+1)+h];
                         icent4=pqy[icent3*m+t];
                         tmp+=distanze[icent4*m+t];
                     }
                     tmp=sqrt(tmp);
                     if(vmax>tmp){
                         //entrata in ANN del valore
-                        ANN[i*K+imax]=j;
+                        ANN[i*K+imax]=icent3;
                         ANN_values[imax]=tmp;
 
                         //ricerca del nuovo massimo
