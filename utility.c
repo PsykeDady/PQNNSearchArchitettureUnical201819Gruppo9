@@ -1168,23 +1168,6 @@ void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, 
  */
 
 void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*codebookp, int kc, float* codebookc,int nq,float* qs,int K, int *ANN){
-    
-
-    /*
-     *
-     * -creare un sottoinsieme Ry del dataset
-     * 
-     * -indexing
-     * --associare ogni punto y del dataset ad un centroide con vq
-     * --creare un vettore di residui r(y)=y-qc(y) per ogni y
-     * --quantizzare con pq r(y)
-     * --creiamo codemap (inverted list), una struttura k*(n+1) che conserva per ogni centroide una lista di punti a lui associati (lista di indici)
-     * ---nel farlo verra visitato il codebookp e per ogni centroide verranno memorizzati in cella i-esima un indice di un punto  a lui associato, mentre in cella [n] ( o n+1 se non si parte da 0) il numero di elementi associati a quel centroide
-     * 
-     * -searching
-     * --creiamo un vettore 'r(x)': con  'w' vicini di x ( e le loro distanze da x)
-     * --calcolare le distanze tra x e i punti y vicini ai w centroidi di x, salvare K risultati piu' piccoli
-     */
 
     int i,c=0,j,imax,h,icent,icent2,icent3,icent4,t,z=0,dstar=d/m;
 
