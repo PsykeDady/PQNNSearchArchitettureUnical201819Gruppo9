@@ -1,4 +1,4 @@
-nasm -f elf -F dwarf -g utility.asm -o utility.o || exit 
-gcc -g -O0  -mavx -lm  utility.o  $1.c -o $1 || exit 
-./$1 && rm $1
+nasm -f elf64 -F dwarf -g utility64.asm -o utility64.o || exit 
+gcc -g -O0  -mavx -lm  utility64.o  $1.c -o $1 || exit 
+cgdb ./$1 && rm $1
 #./$1 && rm $1

@@ -13,10 +13,10 @@
        }
        return somma;
     } */
-extern float dist_2_asm(int, float*, int , float *, int );
+extern float dist64_2_asm(int, float*, int , float *, int );
 
 float dist(int d, float *x, int xi, float *y, int yi){
-    return sqrt(dist_2_asm(d,x,xi,y,yi));
+    return sqrt(dist64_2_asm(d,x,xi,y,yi));
 }
 
 
