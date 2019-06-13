@@ -15,7 +15,7 @@ section .text
     mov     edx, [ebp+24] ; edx=yi
     add     edx, edi ; edx=yi+i
     mov     eax, [ebp+20] ; eax= [y]
-    subps  xmm1, [eax+edx*4];xmm1=x[edx]=x + edx
+    subps   xmm1, [eax+edx*4];xmm1=x[edx]=x + edx
 
 ;elevamento al quadrato di xmm1, aggiunta in xmm0 e incremento di i + 4
     mulps   xmm1,xmm1;xmm1*=xmm1
@@ -36,7 +36,7 @@ dist_2_asm:
     ;    return somma;
     ; }
 
-    push    ebp ;[ebp+8]= d, [ebp+16]= xi, [ebp+24]= yi, [ebp+12]= x, [ebp+24]= y
+    push    ebp ;[ebp+8]= d, [ebp+16]= xi, [ebp+24]= yi, [ebp+12]= x, [ebp+20]= y
     mov     ebp, esp
     push    eax
     push    edx
@@ -55,6 +55,7 @@ LOOPU:
     jge ENDU
 
     dist_2_step 
+
     dist_2_step 
     
     jmp     LOOPU
