@@ -266,8 +266,8 @@ int main(int argc, char** argv) {
 	params* input = malloc(sizeof(params));
 
 	input->filename = NULL;
-	input->exaustive = 0;
-	input->symmetric = 0;
+	input->exaustive = 1;
+	input->symmetric = 1;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;

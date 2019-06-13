@@ -51,12 +51,23 @@
 //#endif
 
 //#### LISTA MACRO ####
+/** calcolo distanza euclidea al quadrato */
+#define DIST_E_2(D,X,XI,Y,YI) \
+float somma=0,\
+differenza=0;\
+for(int i=0;i<D;i++){\
+        differenza=X[XI+i]-Y[YI+i];\
+        differenza*=differenza;\
+        somma+=differenza;\
+    }\
+return somma;\
 /** calcola l'indice di una matrice quadrata vettorizzata */
 #define MATRIX3_INDEX(K,M,I,J,W) I*K*M+J*M+W
 /** indice ultima cella riga i-esima di una matrice con larghezza d*/
 #define LAST_INDEX(D,I) ((I+1)*D-1)
 /** calcolo delta */
 #define DELTA(OLD,NEW) (float)(abs(OLD-NEW)/OLD)
+
 
 
 
@@ -79,7 +90,7 @@
  */
 float dist_2(int d, float *x, int xi, float *y, int yi){
     
-   #ifdef DEBUG_DIST2
+   /* #ifdef DEBUG_DIST2
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist2' #####\n");
     #endif
 
@@ -103,7 +114,6 @@ float dist_2(int d, float *x, int xi, float *y, int yi){
         #ifdef DEBUG_DIST2
             printf("%f\n\n",somma);
         #endif 
-        //dist_2_asm(d, x, xi, y, yi);
     }
 
     #ifdef DEBUG_DIST2
@@ -115,7 +125,8 @@ float dist_2(int d, float *x, int xi, float *y, int yi){
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'dist' #####\n");
     #endif
 
-    return somma;
+    return somma; */
+    DIST_E_2(d,x,xi,y,yi);
 }
 
 
