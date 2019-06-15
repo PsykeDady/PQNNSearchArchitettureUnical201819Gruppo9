@@ -82,6 +82,7 @@ typedef struct {
 	//
 	MATRIX codebookp;
 	MATRIX codebookc;
+	double* ANN_values;
 	int * map;
 	int * mapc;
 	// ...
@@ -230,13 +231,13 @@ void pqnn_search(params* input) {
 	if(input->exaustive){
 		if(input->symmetric){
 			//se simmetrica
-			ANNSDC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+			ANNSDC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->ANN_values,input->n,input->map,input->nq,input->qs);
 		}else{
-			ANNADC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
+			ANNADC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->ANN_values,input->n,input->map,input->nq,input->qs);
 		}
 	}
 	else 
-		notExaustive(input->d,input->m,input->w,input->symmetric,input->n,input->ds,input->k,input->codebookp,input->kc,input->codebookc,input->nq,input->qs,input->knn,input->ANN);
+		notExaustive(input->d,input->m,input->w,input->symmetric,input->n,input->ds,input->k,input->codebookp,input->kc,input->codebookc,input->nq,input->qs,input->knn,input->ANN,input->ANN_values);
 	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
@@ -267,7 +268,7 @@ int main(int argc, char** argv) {
 
 	input->filename = NULL;
 	input->exaustive = 1;
-	input->symmetric = 1;
+	input->symmetric = 0;
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
@@ -460,6 +461,7 @@ int main(int argc, char** argv) {
 	// Determina gli ANN
 	//
 	
+	input->ANN_values=calloc(input->nq*input->knn,sizeof(double));
 	input->ANN = calloc(input->nq*input->knn,sizeof(int));
 
 	t = clock();
@@ -470,7 +472,11 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
+
+	printf("\n\n########STAMPA DEGLI INDICI!########\n");
 	matprintmi(input->knn,input->nq,input->ANN);
+	printf("\n\n########STAMPA VALORI!########\n");
+	matprintmd(input->knn,input->nq,input->ANN_values);
 	
 	//
 	// Salva gli ANN
@@ -493,6 +499,7 @@ int main(int argc, char** argv) {
 	free_block(input->codebookp);
 	free_block(input->codebookc);
 	free_block(input->map);
+	free(input->ANN_values);
 	
 	if (!input->silent)
 		printf("\nDone.\n");

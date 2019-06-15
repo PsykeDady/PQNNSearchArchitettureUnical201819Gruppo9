@@ -132,3 +132,20 @@ void matprintmi(int d, int n, int*matrix){
     }
     printf("%i]]",matrix[i*d+d-1]);
 }
+
+void matprintmd(int d, int n, double*matrix){
+    int i=0,j=0;
+    printf("[");
+    for(;i<n-1;i++){
+        printf("[");
+        for(j=0;j<d-1;j++){
+            printf("%lf,",matrix[i*d+j]);
+        }
+        printf("%lf],",matrix[i*d+d-1]);
+    }
+    printf("[");
+    for(j=0;j<d-1;j++){
+            printf("%lf,",matrix[i*d+j]);
+    }
+    printf("%lf]]",matrix[i*d+d-1]);
+}

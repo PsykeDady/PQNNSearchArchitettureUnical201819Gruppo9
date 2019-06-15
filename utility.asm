@@ -54,7 +54,22 @@ LOOPU:
     cmp edi, esi ; i<d-p+1? // da provare se è possibile fare direttamente [ebp+8]-4+1
     jge ENDU
 
-    dist_2_step 
+     ;inserimento x in xmm1 (packed)
+    mov      edx, [ebp+16] ; edx=xi
+    add      edx, edi ; edx=xi+i
+    mov      eax, [ebp+12] ; eax= [x]
+    movups   xmm1, [eax+edx*4];xmm1=x[edx]=x + edx
+
+;sottrazione di y in xmm1 (packed)
+    mov     edx, [ebp+24] ; edx=yi
+    add     edx, edi ; edx=yi+i
+    mov     eax, [ebp+20] ; eax= [y]
+    subps   xmm1, [eax+edx*4];xmm1=x[edx]=x + edx
+
+;elevamento al quadrato di xmm1, aggiunta in xmm0 e incremento di i + 4
+    mulps   xmm1,xmm1;xmm1*=xmm1
+    addps   xmm0,xmm1;somma+=xmm1
+    add     edi, 4
 
     dist_2_step 
     
