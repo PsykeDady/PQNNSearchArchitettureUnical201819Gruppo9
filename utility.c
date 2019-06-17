@@ -43,10 +43,43 @@
     //#define DEBUG_TIME
 #endif
 
-//#ifdef ANGIULLI
-    #define ALLIGN 
-    #define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*SIZE))
-//#endif
+#ifndef ANGIULLI
+    typedef struct {
+	char* filename; //
+	MATRIX ds; // data set 
+	MATRIX qs; // query set
+	int n; // numero di punti del data set
+	int d; // numero di dimensioni del data/query set
+	int nq; // numero di punti del query set
+	int knn; // numero di ANN approssimati da restituire per ogni query
+	int m; // numero di gruppi del quantizzatore prodotto
+	int k; // numero di centroidi di ogni sotto-quantizzatore
+	int kc; // numero di centroidi del quantizzatore coarse
+	int w; // numero di centroidi del quantizzatore coarse da selezionare per la ricerca non esaustiva
+	int nr; // dimensione del campione dei residui nel caso di ricerca non esaustiva
+	float eps; // 
+	int tmin; //
+	int tmax; //
+	int exaustive; // tipo di ricerca: (0=)non esaustiva o (1=)esaustiva
+	int symmetric; // tipo di distanza: (0=)asimmetrica ADC o (1=)simmetrica SDC
+	int silent;
+	int display;
+	// nns: matrice row major order di interi a 32 bit utilizzata per memorizzare gli ANN
+	// sulla riga i-esima si trovano gli ID (a partire da 0) degli ANN della query i-esima
+	//
+	int* ANN; 
+	//
+	// Inserire qui i campi necessari a memorizzare i Quantizzatori
+	//
+	MATRIX codebookp;
+	MATRIX codebookc;
+	double* ANN_values;
+	int * map;
+	int * mapc;
+	// ...
+	//
+} params;
+#endif
 
 //#### LISTA MACRO ####
 /** 
@@ -76,6 +109,8 @@
 /** calcolo delta */
 #define DELTA(OLD,NEW) (float)(abs(OLD-NEW)/OLD)
 
+#define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*SIZE))
+
 //#### LISTA METODI-MACRO ####
 /** calcolo distanza euclidea al quadrato */
 #define DIST_E_2(D,X,XI,Y,YI,RIS) \
@@ -93,6 +128,9 @@ RIS=somma;}\
 #define DIFFVF(D,X,XI,Y,YI,RES,RI)\
 for(register int indice_diffvf;indice_diffvf<D;indice_diffvf++)\
     RES[RI+indice_diffvf]=X[XI+indice_diffvf]-Y[YI+indice_diffvf];\
+
+#define COPYV(D,DEST,DESTI,SRC,SRCI)\
+for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[DESTI*D+indicecopia]=SRC[SRCI*D+indicecopia];
 
 
 
@@ -120,7 +158,7 @@ for(register int indice_diffvf;indice_diffvf<D;indice_diffvf++)\
  * -sottrae gli elementi del vettore x dagli elementi del vettore y (realizza res[w]=x[i]-y[j] per i che va da xi a xi+d, j che va da yi a yi+d e w che va da ri a ri+d)
  */
 
-void diffvf_old(int d, float* x, int xi, float *y, int yi, float *res, int ri){
+void diffvf(int d, float* x, int xi, float *y, int yi, float *res, int ri){
     #ifdef DEBUG_DIFFVF
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'diffvf' #####\n");
     #endif

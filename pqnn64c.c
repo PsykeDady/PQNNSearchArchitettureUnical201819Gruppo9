@@ -194,7 +194,7 @@ void save_ANN(char* filename, int* ANN, int nq, int knn) {
 
 /*
  *	pqnn_index
- * 	==========
+ * 	========== ==
  */
 void pqnn_index(params* input) {
 	
