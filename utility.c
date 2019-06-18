@@ -44,6 +44,7 @@
 #endif
 
 #ifndef ANGIULLI
+    #define MATRIX float*
     typedef struct {
 	char* filename; //
 	MATRIX ds; // data set 

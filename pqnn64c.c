@@ -206,9 +206,13 @@ void pqnn_index(params* input) {
     if(! input->exaustive){
 		n=input->nr;
 		init_codebook(input->d,n,input->ds,input->kc,input->codebookc);
+		/* printf("pqnn64_index: stampa init codebookc\n");
+		printmf(input->d,input->kc,input->codebookc); */
 		k_means(input->d,1,input->eps,input->tmin,input->tmax,input->kc,input->codebookc,n,input->ds,input->mapc);
 	}
 	init_codebook(input->d,n,input->ds,input->k,input->codebookp);
+		/* 	printf("pqnn64_index: stampa init codebook\n");
+		printmf(input->d,input->k,input->codebookp); */
 
 	
 	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebookp,n,input->ds,input->map);
