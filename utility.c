@@ -6,7 +6,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 
 //extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
@@ -40,7 +39,6 @@
     //#define DEBUG_ADC
     //#define DEBUG_ANNADC
     //#define DEBUG_NOTEXAUSTIVE
-    //#define DEBUG_TIME
 #endif
 
 #ifndef ANGIULLI
@@ -82,8 +80,10 @@
 } params;
 #endif
 
+
 //#### LISTA MACRO ####
-/** 
+
+/**
  * args:
  * -K:numero colonne
  * -M:numero larghezza (numero celle in cella)
@@ -92,9 +92,9 @@
  * -W:indice tridimensionale
  * 
  * descr:
- * -calcola l'indice di una matrice cubica vettorizzata 
+ * -calcola l'indice di una matrice cubica vettorizzata : I*K*M+J*M+W
  */
-#define MATRIX3_INDEX(K,M,I,J,W) I*K*M+J*M+W
+#define MATRIX3_INDEX(K,M,I,J,W) (I)*(K)*(M)+(J)*(M)+(W)
 /** 
  * args:
  * -M:numero colonne
@@ -102,15 +102,15 @@
  * -J:indice colonna
  * 
  * descr:
- * -calcola l'indice di accesso in una matrice quadrata vettorizzata 
+ * -calcola l'indice di accesso in una matrice quadrata vettorizzata : M*I+J
  */
-#define MATRIX2_INDEX(M,I,J) M*I+J
-/** indice ultima cella riga i-esima di una matrice con larghezza d*/
-#define LAST_INDEX(D,I) ((I+1)*D-1)
-/** calcolo delta */
+#define MATRIX2_INDEX(M,I,J) (M)*(I)+(J)
+/** indice ultima cella riga i-esima di una matrice con larghezza d : ((I+1)*D-1)*/
+#define LAST_INDEX(D,I) (((I)+1)*(D)-1)
+/* calcolo delta */
 #define DELTA(OLD,NEW) (float)(abs(OLD-NEW)/OLD)
 
-#define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*SIZE))
+#define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*(SIZE)))
 
 //#### LISTA METODI-MACRO ####
 /** calcolo distanza euclidea al quadrato */
@@ -118,7 +118,7 @@
 {float somma=0,\
 differenza=0;\
 for(register int indice_distanza=0;indice_distanza<D;indice_distanza++){\
-        differenza=X[XI+indice_distanza]-Y[YI+indice_distanza];\
+        differenza=X[(XI)+indice_distanza]-Y[(YI)+indice_distanza];\
         differenza*=differenza;\
         somma+=differenza;\
     }\
@@ -127,12 +127,15 @@ RIS=somma;}\
 #define DIST_E(D, X, XI, Y, YI, RIS) DIST_E_2(D,X,XI,Y,YI,RIS); RIS=sqrt(RIS); 
 
 #define DIFFVF(D,X,XI,Y,YI,RES,RI)\
-for(register int indice_diffvf;indice_diffvf<D;indice_diffvf++)\
-    RES[RI+indice_diffvf]=X[XI+indice_diffvf]-Y[YI+indice_diffvf];\
+for(register int indice_diffvf=0;indice_diffvf<D;indice_diffvf++)\
+    RES[(RI)+indice_diffvf]=X[(XI)+indice_diffvf]-Y[(YI)+indice_diffvf];\
 
 #define COPYV(D,DEST,DESTI,SRC,SRCI)\
-for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[DESTI*D+indicecopia]=SRC[SRCI*D+indicecopia];
+for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
 
+#define KMEANS_STEP(d,m,n,dataset,map,k,codebook,t)\
+nuovicentroidi(d,m,n,dataset,map,k,codebook);\
+pq(d,m,k,codebook,n,dataset,map);\
 
 
 
@@ -186,9 +189,9 @@ void diffvf(int d, float* x, int xi, float *y, int yi, float *res, int ri){
  * argomenti:
  *  -'d' numero elementi da copiare
  *  -'dest' vettore destinazione
- *  -'desti' indice iniziale di dest
+ *  -'desti' indice iniziale di dest ( non moltiplicato )
  *  -'src' vettore sorgente
- *  -'srci' indice iniziale vettore sorgente
+ *  -'srci' indice iniziale vettore sorgente ( non moltiplicato)
  * descrizione: 
  *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
  */
@@ -197,7 +200,7 @@ void copyv(int d, float* dest, int desti, float *src, int srci){
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'copyv' #####\n");
     #endif
     for(int i=0;i<d;i++){
-        dest[desti*d+i]=src[srci*d+i];
+        dest[desti+i]=src[srci+i];
     }
 }
 
@@ -233,7 +236,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
     float mind,ndist;
 
     //mind=dist(dstar,dataset,j,codebook,mi*dstar);
-    DIST_E(dstar,dataset,j,codebook,mi*dstar,mind);
+    DIST_E_2(dstar,dataset,j,codebook,mi*dstar,mind);
     #ifdef DEBUG_MINDIST
         printf("centroide 0 (indice %i) preso in carico:\n",mi*dstar);
         printfv(dstar,codebook,mi*dstar);
@@ -243,7 +246,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
 
     for(i=1;i<k;i++){
         //ndist=dist(dstar,dataset,j,codebook,d*i+mi*dstar);
-        DIST_E(dstar,dataset,j,codebook,d*i+mi*dstar,ndist);
+        DIST_E_2(dstar,dataset,j,codebook,d*i+mi*dstar,ndist);
         #ifdef DEBUG_MINDIST
             printf("centroide %i (indice %i) preso in carico:\n",i,d*i+mi*dstar);
             printfv(dstar,codebook,d*i+mi*dstar);
@@ -280,46 +283,14 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
     #endif
 
-    #ifdef DEBUG_INITCODEBOOK
-        printf("Ecco il dataset di dimensione %i passato:\n",n);
-        printmf(d,n,dataset);
-    #endif
-
-
-    int i=0,j=0,flag=1,r=0;
-    #ifdef DEBUG_INITCODEBOOK
-        printf("numero di elementi da creare:%i\n\n",k);
-    #endif
-    int rp[k];
-    for(i=0;i<k  /* && i<n */ ;i++){        
-         /* do{
-            flag=1;  */
-            r= (int)(rand()%n);
-            /* #ifdef DEBUG_INITCODEBOOK
-                printf("ecco l'indice generato: %i\n",r);
-            #endif 
-            for(j=0;j<i;j++) {
-                if(r==rp[j])
-                {
-                    #ifdef DEBUG_INITCODEBOOK
-                        printf("ATTENZIONE INDICE GIA' PRESENTE!!\n\n");
-                    #endif 
-                    flag=0;
-                }
-            }//for j 
-        }while(flag==0); //do flag */
-        rp[i]=r;
-        copyv(d,codebook,i,dataset,r);
-        #ifdef DEBUG_INITCODEBOOK
-            printf("\n\n");
-        #endif
+    int i=0,j=0;
+    for(i=0; i<k && i<n ;i++){
+        copyv(d,codebook,i*d,dataset,i*d);
     }//for i
-
-
-    #ifdef DEBUG_INITCODEBOOK
-        printf("stampiamo ora il codebook risultato\n");
-        printmf(d,k,codebook);
-    #endif
+    //nel caso k>n
+    for(; i<k ;i++){        
+        copyv(d,codebook,i*d,dataset,n*d-1);
+    }//for i
 
     #ifdef DEBUG_INITCODEBOOK
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'init_codebook' #####\n");
@@ -474,6 +445,7 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
                     #endif
                 }
             }
+            if(c==0) c=1;
             for(z=0;z<dstar;z++){
                 //possibile mettere sotto?
                 codebook[i*d+w*dstar+z]=nc[w*dstar+z]/c;
@@ -484,7 +456,7 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
     #ifdef DEBUG_NUOVICENTROIDI
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'nuovicentroidi' #####\n");
     #endif
-
+    free(nc);
 }
 
 /**
@@ -517,8 +489,6 @@ void pq(int d, int m, int k, float *codebook, int n, float *dataset, int*map){
         - per ogni sottovettore, si cerca un sottocentroide (mindist) più vicino
         -trovati gli m sottovettori, vanno concatenati per ottenere la quantizzazione del vettore
         -aggiungere al risultato dataset(i),centroide(dataset(i))
-
-        TODO passare mappa da aggiornare, non creare qua
     */
 
    int dstar=d/m; //numero elementi sottovettori
@@ -549,6 +519,7 @@ void pq(int d, int m, int k, float *codebook, int n, float *dataset, int*map){
 
 
 
+
 void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codebook, int n, float* dataset, int* map){
 
     #ifdef DEBUG_KMEANS
@@ -565,55 +536,35 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
     */
 
     float tmp=0;
-    int t=0;
+    int t=1;
     float delta=0;
     
     double ob=0; 
     double nuovo_ob=0;
 
-    do{
-        pq(d,m,k,codebook,n,dataset,map);
-        #ifdef DEBUG_KMEANS
-            printf("stampa MAP al passo t=%i\n",t);
-            printmi(m,n,map);
-            printf("\n");
-        #endif
-        nuovicentroidi(d,m,n,dataset,map,k,codebook); 
-        #ifdef DEBUG_KMEANS
-            printf("stampa centroidi al passo t=%i\n",t+1);
-            printmf(d,k,codebook);
-            printf("\n");
-        #endif
-    }while(t++<tmin-1);
-    ob=obiettivo(d,m,n,dataset,map,codebook);
-    //l'ultima volta il ciclo lo facciamo al di fuori del while
     pq(d,m,k,codebook,n,dataset,map);
-    #ifdef DEBUG_KMEANS
-        printf("stampa RES al passo t=%i\n",t);
-        printmi(m,n,map);
-        printf("\n");
+     #ifdef DEBUG_KMEANS
+        printf("pq prima di partire, mappa\n");
+        printmi(1,n,map);
     #endif
-    nuovo_ob=obiettivo(d,m,n,dataset,map,codebook);
-    #ifdef DEBUG_KMEANS
-        printf("stampa obiettivo passo t=%i\nob=%f\n",t,nuovo_ob);
-    #endif
-    t++;
-    delta=DELTA(ob,nuovo_ob);
+
+    while(t++<tmin){
+        KMEANS_STEP(d,m,n,dataset,map,k,codebook,t);
+        #ifdef DEBUG_KMEANS
+            printf("nuovi centroidi al passo %i\n",t-1);
+            printmf(d,k,codebook);
+        #endif
+    }
+
+    ob=obiettivo(d,m,n,dataset,map,codebook);
+        #ifdef DEBUG_KMEANS
+            printf("nuovi centroidi al passo %i\n",t-1);
+            printmf(d,k,codebook);
+        #endif
         
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps ){
-        nuovicentroidi(d,m,n,dataset,map,k,codebook); 
-        #ifdef DEBUG_KMEANS
-            printf("stampa centroidi al passo t=%i\n",t-1);
-            printmf(d,k,codebook);
-            printf("\n");
-        #endif
-        pq(d,m,k,codebook,n,dataset,map);
-        #ifdef DEBUG_KMEANS
-            printf("stampa RES al passo t=%i\n",t-1);
-            printmi(m,n,map);
-            printf("\n");
-        #endif
+        KMEANS_STEP(d,m,n,dataset,map,k,codebook,t);
         nuovo_ob= obiettivo(d,m,n,dataset,map,codebook);
         #ifdef DEBUG_KMEANS
             printf("stampa obiettivo passo t=%i\nob=%f\n",t-1,nuovo_ob);
@@ -1134,7 +1085,7 @@ void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, double* ANN_va
  *  TODO
  */
 
-void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, int*rx){
+void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, int*mapxw){
     int j,imax,h;
     float distmax=-1,tmp;
     float *rx_values=ASSEGNA_BLOCCO(float,w);
@@ -1149,23 +1100,25 @@ void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, 
             distmax=tmp;
             imax=j;
         }
-        rx[j]= j;
+        mapxw[ix*w+j]= j;
         rx_values[j]=tmp;
+       
     }
     
     for(;j<k;j++){
         //tmp=dist_2(d,qs,ix*d,codebook,j*d); // dist_2 perche': tanto se e' piu' piccola la radice, e' piu' piccolo anche il radicando
         DIST_E_2(d,qs,ix*d,codebook,j*d,tmp);
         if(distmax>tmp){
+        
             distmax=tmp;
             rx_values[imax]= tmp;
-            rx[imax]= j;
+            mapxw[ix*w+imax]= j;
 
             for(h=0; h<w;h++){
                 //ricerca nuovo massimo 
                 if(distmax<rx_values[h]){
                     distmax=rx_values[h];
-                    imax=rx[h];
+                    imax=h;
                 }
             }//h
         }//trovato nuovo max
@@ -1192,103 +1145,73 @@ void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, 
  * descr:
  * -TODO
  */
+void notExaustive(params* input){
 
-void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*codebookp, int kc, float* codebookc,int nq,float* qs,int K, int *ANN, double*ANN_values){
+    #ifdef DEBUG_NOTEXAUSTIVE
+        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'notExaustive' #####\n");
+    #endif
 
-    int i,c=0,j,imax,h,icent,icent2,icent3,icent4,t,z=0,dstar=d/m;
+#ifdef DEBUG_NOTEXAUSTIVE
+    printf("\n");
+#endif
+
+    //CONTINUARE AD APPLICARE LEMODIFICHE RELATIVE A SPOSTAMENTO INIZIALIZZAZIONE DELLE MAPPE IN PQNN_INDEX
+
+    int i,c=0,j,imax,h,icent,icent2,icent3,icent4,t,z=0,dstar=input->d/input->m;
 
     double vmax=-1;
     double tmp;
-    
-    float 
-          *ry=ASSEGNA_BLOCCO(float,n*d), // vettore residui -> y-qc(y) valori
-          *diffx=ASSEGNA_BLOCCO(float,w*d);
-          
                
-    #define CODEMAPL (n+1)*kc   
-    int *pqy=ASSEGNA_BLOCCO(int,m*n), //pq(y-qc(y)) (indici,mappa)
-    *rx=ASSEGNA_BLOCCO(int,w), //contiene gli indici dei w centroidi più vicini a x
-    *map=ASSEGNA_BLOCCO(int,n),
-    *codemap=ASSEGNA_BLOCCO(int,CODEMAPL),
-    *mapx=ASSEGNA_BLOCCO(int,w*m); 
+    /* pq(x-qc(y) -> pq(rx) */
+    int *mapx=ASSEGNA_BLOCCO(int,input->m*input->w*input->nq);
 
-    
+    double *distanze; 
 
-
-    //notExaustiveIndexing
-
-    pq(d,1,kc,codebookc,n,ds,map); //map=qc(y)
-
-    for(i=0;i<n;i++){
-        //differenza(y,qc(y))
-        DIFFVF(d,ds,i*d,codebookc,map[i]*d,ry,i*d);
-    }
-
-    pq(d,m,k,codebookp,n,ry,pqy); // pqy=pq(ry)
-
-    // creazione codemap
-    for(i=1;i<=kc;i++) codemap[i*n-1]=0;// azzera l'ultima cella di icent 
-    for(i=0;i<n;i++){
-        //per ogni punto del dataset 
-        icent=map[i];
-        c=codemap[LAST_INDEX(n,icent)]; // accede all'ultima cella di icent
-        codemap[icent*n+c]=i;
-        codemap[LAST_INDEX(n,icent)]=c+1;
-    }
-
-    //notExaustiveSearching
-
-    if(symmetric){
+    if(input->symmetric){
         //SDC
+        pq(input->d,input->m,input->k,input->codebookp,input->nq*input->w,input->rx,mapx);
+        #ifdef DEBUG_NOTEXAUSTIVE
+            printf("Stampa Matrice mapx\n");
+            printmi(input->w,input->m*input->nq,mapx);
+        #endif
         //matrice delle differenze
-        double distanze[k*k*m];
-        for( i=0; i<k;i++){
+        distanze=ASSEGNA_BLOCCO(double,input->k*input->k*input->m);
+        for( i=0; i<input->k;i++){
             //centroide i
-            for(h=0;h<m;h++) 
-                distanze[MATRIX3_INDEX(k,m,i,i,h)]=0;
-            for( j=i+1;j<k;j++){
+            for(h=0;h<input->m;h++) 
+                distanze[MATRIX3_INDEX(input->k,input->m,i,i,h)]=0;
+            for( j=i+1;j<input->k;j++){
                 //centroide j
-                #ifdef DEBUG_NOTEXAUSTIVE
-                    printf("distanza tra i=%i e j=%i\n",i,j);
-                #endif
-                for(h=0;h<m;h++){
-                    #ifdef DEBUG_NOTEXAUSTIVE
-                        printf("sottovettore %i\n",h);
-                    #endif
+               
+                for(h=0;h<input->m;h++){
+                
                     //tmp=(double)(dist_2(dstar,codebookp,d*i+h*dstar,codebookp,d*j+h*dstar)); //distanze al quadrato
-                    DIST_E_2(dstar,codebookp,d*i+h*dstar,codebookp,d*j+h*dstar,tmp);
-                    distanze[MATRIX3_INDEX(k,m,i,j,h)]=tmp;
-                    distanze[MATRIX3_INDEX(k,m,j,i,h)]=tmp;
-                    #ifdef DEBUG_NOTEXAUSTIVE
-                        printf("distanze[%i]=%lf\n\n",,distanze[]);
-                    #endif
-                }//h
+                    DIST_E_2(dstar,input->codebookp,input->d*i+h*dstar,input->codebookp,input->d*j+h*dstar,tmp);
+                    distanze[MATRIX3_INDEX(input->k,input->m,i,j,h)]=tmp;
+                    distanze[MATRIX3_INDEX(input->k,input->m,j,i,h)]=tmp;
+                    
+                }//
             }//js
         }//i
-        for(i=0;i<nq;i++){
-            //punti query set
-            centroidi_associati(d,w,qs,i,kc,codebookc,rx);
-            z=0;
-            for( j=0 ; j< w; j++) {
-                DIFFVF(d,qs,i*d,codebookc,rx[j],diffx,j*d);
-            }
-            pq(d,m,k,codebookp,w,diffx,mapx);
-            for( j=0 ; j< w && z<K; j++){
+        for(i=0;i<input->nq;i++){
+            z=0;//contatore di ANN
+            for( j=0 ; j< input->w && z<input->knn; j++){
                 //w centroidi di x
-                icent=rx[j];
-                c=codemap[LAST_INDEX(n,icent)];
-                for(h=0;h<c && z<K;h++){
+                icent=input->mapxw[i*input->w+j];
+                c=input->codemap[LAST_INDEX(input->n+1,icent)];
+                for(h=0;h<c && z<input->knn;h++){
                     tmp=0;
                     //punti vicini a centroide
-                    icent3=codemap[icent*(n+1)+h];
-                    for(t=0;t<m;t++){
-                        icent2=mapx[j*m+t];
-                        icent4=pqy[icent3*m+t];
-                        tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                    icent3=input->codemap[icent*
+                    (input->n+1)+h];
+                    for(t=0;t<input->m;t++){
+                        icent2=mapx[MATRIX3_INDEX(input->w,input->m,i,j,t)];
+                        icent4=input->pqy[icent3*input->m+t];
+                        tmp+=distanze[MATRIX3_INDEX(input->k,input->m,icent2,icent4,t)];
                     }
-                    ANN[i*K+z]=icent3;
+                    input->ANN[i*input->knn+z]=icent3;
                     tmp=sqrt(tmp);
-                    ANN_values[i*K+z]=tmp;
+                    input->ANN_values[i*input->knn+z]=tmp;
                     if(vmax<tmp){
                         vmax=tmp;
                         imax=z;
@@ -1297,96 +1220,94 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
                 }
             }
             for(;h<c;h++){
-                tmp=0;
+               tmp=0;
                 //punti vicini a centroide
-                icent3=codemap[icent*(n+1)+h];
-                for(t=0;t<m;t++){
-                    icent2=mapx[j*m+t];
-                    icent4=pqy[icent3*m+t];
-                    tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                icent3=input->codemap[icent*
+                (input->n+1)+h];
+                for(t=0;t<input->m;t++){
+                    icent2=mapx[MATRIX3_INDEX(input->w,input->m,i,j,t)];
+                    icent4=input->pqy[icent3*input->m+t];
+                    tmp+=distanze[MATRIX3_INDEX(input->k,input->m,icent2,icent4,t)];
                 }
                 tmp=sqrt(tmp);
                 if(vmax>tmp){
                     //entrata in ANN del valore
-                    ANN[i*K+imax]=icent3;
-                    ANN_values[i*K+imax]=tmp;
+                    input->ANN[i*input->knn+imax]=icent3;
+                    input->ANN_values[i*input->knn+imax]=tmp;
 
                     //ricerca del nuovo massimo
                     vmax=tmp;
-                    for(t=0;t<K;t++){
-                        if(vmax<ANN_values[i*K+t]){
-                            vmax=ANN_values[i*K+t];
+                    for(t=0;t<input->knn;t++){
+                        if(vmax<input->ANN_values[i*input->knn+t]){
+                            vmax=input->ANN_values[i*input->knn+t];
                             imax=t;
                         }
-                    }
+                    }//t
                 }//if
             }
-            for(; j< w; j++){
+            for(; j< input->w; j++){
                 //w centroidi di x
-                icent=rx[j];
-                c=codemap[LAST_INDEX(n,j)];
+                icent=input->mapxw[input->w*i+j];
+                c=input->codemap[LAST_INDEX(input->n+1,j)];
                 for(h=0;h<c;h++){
-                    tmp=0;
+                   tmp=0;
                     //punti vicini a centroide
-                    icent3=codemap[icent*(n+1)+h];
-                    for(t=0;t<m;t++){
-                        icent2=mapx[j*m+t];
-                        icent4=pqy[icent3*m+t];
-                        tmp+=distanze[MATRIX3_INDEX(k,m,icent2,icent4,t)];
+                    icent3=input->codemap[icent*
+                    (input->n+1)+h];
+                    for(t=0;t<input->m;t++){
+                        icent2=mapx[MATRIX3_INDEX(input->w,input->m,i,j,t)];
+                        icent4=input->pqy[icent3*input->m+t];
+                        tmp+=distanze[MATRIX3_INDEX(input->k,input->m,icent2,icent4,t)];
                     }
                     tmp=sqrt(tmp);
                     if(vmax>tmp){
                         //entrata in ANN del valore
-                        ANN[i*K+imax]=icent3;
-                        ANN_values[i*K+imax]=tmp;
+                        input->ANN[i*input->knn+imax]=icent3;
+                        input->ANN_values[i*input->knn+imax]=tmp;
 
                         //ricerca del nuovo massimo
                         vmax=tmp;
-                        for(t=0;t<K;t++){
-                            if(vmax<ANN_values[i*K+t]){
-                                vmax=ANN_values[i*K+t];
+                        for(t=0;t<input->knn;t++){
+                            if(vmax<input->ANN_values[i*input->knn+t]){
+                                vmax=input->ANN_values[i*input->knn+t];
                                 imax=t;
                             }
                         }
                     }//if
                 }//for h
             }//for j
-            mergeSort(ANN_values,ANN,0,K-1,i*K);
+            mergeSort(input->ANN_values,input->ANN,0,input->knn-1,i*input->knn);
         }//i
     }else{
         //ADC
         //matrice delle differenze
-        double distanze[k*m];
-        for(i=0;i<nq;i++){
-            //punti query set
-            centroidi_associati(d,w,qs,i,kc,codebookc,rx);
-            z=0;
-            for( j=0 ; j< w; j++) {
-                DIFFVF(d,qs,i*d,codebookc,rx[j],diffx,j*d);
-            }
-            for( j=0 ; j< w && z<K; j++){
-                c=0;
-                for(t=0;t<k;t++){//per ogni punto del codebookp
-                    for(h=0;h<m;h++){//ogni sottovettore
+        distanze=ASSEGNA_BLOCCO(double,input->k*input->m);
+        for(i=0;i<input->nq;i++){
+            //punti query st
+            z=0;//contatore per ANN
+            for( j=0 ; j< input->w && z<input->knn; j++){
+                c=0;//contatore distanze
+                for(t=0;t<input->k;t++){//per ogni punto del codebookp
+                    for(h=0;h<input->m;h++){//ogni sottovettore
                         //distanze[c]=(double)(dist_2(dstar,diffx,j*d+h*dstar,codebookp,t*d+h*dstar));
-                        DIST_E_2(dstar,diffx,j*d+h*dstar,codebookp,t*d+h*dstar,distanze[c]);
+                        DIST_E_2(dstar,input->rx,MATRIX3_INDEX(input->w,input->d,i,j,h*dstar),input->codebookp,t*input->d+h*dstar,distanze[c]);
                         c++;
                     }
                 }
-                //w centroidi di x
-                icent=rx[j];
-                c=codemap[LAST_INDEX(n,icent)];
-                for(h=0;h<c && z<K;h++){
+                //c è inutilizzato da qua, diventa numero di punti associati al centroide j
+                icent=input->mapxw[MATRIX2_INDEX(input->w,i,j)]; //indice j del centroide i di x
+                c=input->codemap[LAST_INDEX(input->n+1,icent)];
+                for(h=0;h<c && z<input->knn;h++){
                     tmp=0;
                     //punti vicini a centroide
-                    icent3=codemap[icent*(n+1)+h];
-                    for(t=0;t<m;t++){
-                        icent4=pqy[icent3*m+t];
-                        tmp+=distanze[icent4*m+t];
+                    icent3=input->codemap[MATRIX2_INDEX(input->n+1,icent,h)];
+                    for(t=0;t<input->m;t++){
+                        icent4=input->pqy[icent3*input->m+t];
+                        tmp+=distanze[MATRIX2_INDEX(input->m,icent4,t)];
                     }
-                    ANN[i*K+z]=icent3;
+                    input->ANN[i*input->knn+z]=icent3;
                     tmp=sqrt(tmp);
-                    ANN_values[i*K+z]=tmp;
+                    input->ANN_values[i*input->knn+z]=tmp;
                     if(vmax<tmp){
                         vmax=tmp;
                         imax=z;
@@ -1397,74 +1318,71 @@ void notExaustive(int d,int m, int w, int symmetric,int n,float*ds,int k, float*
             for(;h<c;h++){
                 tmp=0;
                 //punti vicini a centroide
-                icent3=codemap[icent*(n+1)+h];
-                for(t=0;t<m;t++){
-                    icent4=pqy[icent3*m+t];
-                    tmp+=distanze[icent4*m+t];
+                icent3=input->codemap[MATRIX2_INDEX(input->n+1,icent,h)];
+                for(t=0;t<input->m;t++){
+                    icent4=input->pqy[icent3*input->m+t];
+                    tmp+=distanze[MATRIX2_INDEX(input->m,icent4,t)];
                 }
                 tmp=sqrt(tmp);
                 if(vmax>tmp){
                     //entrata in ANN del valore
-                    ANN[i*K+imax]=icent3;
-                    ANN_values[i*K+imax]=tmp;
+                    input->ANN[i*input->knn+imax]=icent3;
+                    input->ANN_values[i*input->knn+imax]=tmp;
 
                     //ricerca del nuovo massimo
                     vmax=tmp;
-                    for(t=0;t<K;t++){
-                        if(vmax<ANN_values[i*K+t]){
-                            vmax=ANN_values[i*K+t];
+                    for(t=0;t<input->knn;t++){
+                        if(vmax<input->ANN_values[i*input->knn+t]){
+                            vmax=input->ANN_values[i*input->knn+t];
                             imax=t;
                         }
                     }
                 }//if
             }
-            for(; j< w; j++){
-                c=0;
-                for(t=0;t<k;t++){//per ogni punto del codebookp
-                    for(h=0;h<m;h++){//ogni sottovettore
+            for(; j< input->w; j++){
+                c=0;//contatore distanze
+                for(t=0;t<input->k;t++){//per ogni punto del codebookp
+                    for(h=0;h<input->m;h++){//ogni sottovettore
                         //distanze[c]=(double)(dist_2(dstar,diffx,j*d+h*dstar,codebookp,t*d+h*dstar));
-                        DIST_E_2(dstar,diffx,j*d+h*dstar,codebookp,t*d+h*dstar,distanze[c]);
+                        DIST_E_2(dstar,input->rx,MATRIX3_INDEX(input->w,input->d,i,j,h*dstar),input->codebookp,t*input->d+h*dstar,distanze[c]);
                         c++;
                     }
                 }
-                //w centroidi di x
-                icent=rx[j];
-                c=codemap[LAST_INDEX(n,j)];
+                //c è inutilizzato da qua, diventa numero di punti associati al centroide j
+                icent=input->mapxw[MATRIX2_INDEX(input->w,i,j)]; //indice j del centroide i di x
+                c=input->codemap[LAST_INDEX(input->n+1,icent)];
                 for(h=0;h<c;h++){
                     tmp=0;
                     //punti vicini a centroide
-                    icent3=codemap[icent*(n+1)+h];
-                    for(t=0;t<m;t++){
-                        icent4=pqy[icent3*m+t];
-                        tmp+=distanze[icent4*m+t];
+                    icent3=input->codemap[MATRIX2_INDEX(input->n+1,icent,h)];
+                    for(t=0;t<input->m;t++){
+                        icent4=input->pqy[icent3*input->m+t];
+                        tmp+=distanze[MATRIX2_INDEX(input->m,icent4,t)];
                     }
                     tmp=sqrt(tmp);
                     if(vmax>tmp){
                         //entrata in ANN del valore
-                        ANN[i*K+imax]=icent3;
-                        ANN_values[i*K+imax]=tmp;
+                        input->ANN[i*input->knn+imax]=icent3;
+                        input->ANN_values[i*input->knn+imax]=tmp;
 
                         //ricerca del nuovo massimo
                         vmax=tmp;
-                        for(t=0;t<K;t++){
-                            if(vmax<ANN_values[i*K+t]){
-                                vmax=ANN_values[i*K+t];
+                        for(t=0;t<input->knn;t++){
+                            if(vmax<input->ANN_values[i*input->knn+t]){
+                                vmax=input->ANN_values[i*input->knn+t];
                                 imax=t;
                             }
                         }
                     }//if
                 }//for h
             }//for j
-            mergeSort(ANN_values,ANN,0,K-1,i*K);
+            mergeSort(input->ANN_values,input->ANN,0,input->knn-1,i*input->knn);
         }//i
-    }
-
+    }//else asymmetric
     free(mapx);
-    free(codemap);
-    free(rx);
-    free(pqy);
-    //free(qx); non più usato qx
-    free(ry);
-    //free(diffx);
+    free(distanze);
 
-}
+    #ifdef DEBUG_NOTEXAUSTIVE
+        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'notExaustive' #####\n");
+    #endif
+}//notExaustive
