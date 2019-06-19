@@ -79,12 +79,37 @@ typedef struct {
 	//
 	// Inserire qui i campi necessari a memorizzare i Quantizzatori
 	//
-	MATRIX codebook;
+	MATRIX codebookp;
+	MATRIX codebookc;
+	double* ANN_values;
 	int * map;
+
+	//VALORI ESCLUSIVI DI NOT_EXAUSTIVE
+
+	/** map qc(YR) */
+	int * mapc;
+	/** map qc(y) */
+	int *mapyc;
+	/** pq(ry) */
+	int *pqy;
+	//w centroidi associati a x
+	int *mapxw; // nq(righe)*w(colonne)
+	/** lista dei punti più vicini ai centroidi coarse, struttura:
+	 * 
+	 * (riga/centroide)j -> [ indice ds1....indice ds c, 0....0 , numero punti effettivamente presenti c ]
+	 *
+	 * matrice (n+1)xkc
+	 * 
+	 */
+	int *codemap;
+	/** x-qc(y) */
+	MATRIX rx; // dim=nq*d*w
+	/** y-qc(y) */
+	MATRIX ry;
+
 	// ...
 	//
 } params;
-
 
 /*
  * 
@@ -190,18 +215,63 @@ void save_ANN(char* filename, int* ANN, int nq, int knn) {
 
 /*
  *	pqnn_index
- * 	==========
+ * 	============
  */
 void pqnn_index(params* input) {
 	
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
-    //pqnn32_index(input); // Chiamata funzione assembly
-    init_codebook(input->d,input->n,input->ds,input->k,input->codebook);
-	
-	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebook,input->n,input->ds,input->map);
 
+	int n=input->n;
+    if(! input->exaustive){
+		n=input->nr;
+		//calcolo codebook di partenza
+		init_codebook(input->d,input->n,input->ds,input->kc,input->codebookc);
+
+		//migliore codebook coarse
+		k_means(input->d,1,input->eps,input->tmin,input->tmax,input->kc,input->codebookc,n,input->ds,input->mapc);
+
+		//migliore mappa per il codebook coarse
+		pq(input->d,1,input->kc,input->codebookc,input->n,input->ds,input->mapyc);
+
+		
+
+		//calcolo residui y
+		for(int i=0;i<input->n;i++){
+			int icent=input->mapyc[i];
+			//differenza(y,qc(y))
+			DIFFVF(input->d,input->ds,i*input->d,input->codebookc,icent*input->d,input->ry,i*input->d); 
+			
+        }
+
+		//calcolo pq(ry)
+		pq(input->d,input->m,input->k,input->codebookp,input->n,input->ry,input->pqy);
+
+		for(register int i=0;i<input->n;i++){
+			//per ogni punto del dataset 
+			int icent=input->mapyc[i];
+			int c=input->codemap[LAST_INDEX(input->n,icent)]; // accede all'ultima cella di icent
+			input->codemap[icent*input->n+c]=i;
+			input->codemap[LAST_INDEX(input->n,icent)]=c+1;
+    	}
+		for (register int i =0; i<input->nq;i++){
+			centroidi_associati(input->d,input->w,input->qs,i,input->kc,input->codebookc,input->mapxw);
+
+			for(int j=0 ; j< input->w; j++) {
+				int icent=input->mapxw[i*input->w+j]*input->d;
+
+				DIFFVF(input->d,input->qs,i*input->d,input->codebookc,icent,input->rx,MATRIX3_INDEX(input->w,input->d,i,j,0));
+			}
+
+		}
+
+
+	}
+	init_codebook(input->d,n,input->ds,input->k,input->codebookp);
+
+	
+	k_means(input->d,input->m,input->eps,input->tmin,input->tmax,input->k,input->codebookp,n,input->ds,input->map);
     // -------------------------------------------------
 
 }
@@ -217,14 +287,17 @@ void pqnn_search(params* input) {
     // Codificare qui l'algoritmo di interrogazione
     // -------------------------------------------------
     
-    //pqnn32_search(input); // Chiamata funzione assembly
-	if(input->symmetric){
-		//se simmetrica
-		ANNSDC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
-	}else{
-		ANNADC(input->d,input->m,input->k,input->codebook,input->knn,input->ANN,input->n,input->map,input->nq,input->qs);
 
+	if(input->exaustive){
+		if(input->symmetric){
+			//se simmetrica
+			ANNSDC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->ANN_values,input->n,input->map,input->nq,input->qs);
+		}else{
+			ANNADC(input->d,input->m,input->k,input->codebookp,input->knn,input->ANN,input->ANN_values,input->n,input->map,input->nq,input->qs);
+		}
 	}
+	else 
+		notExaustive(input);
 	//la funzione scritta contiene i parametri già divisi, quindi va fatta una nuova funzione che chiami il metodo tante volte uno per ogni query
 
 	// Restituisce il risultato come una matrice di nq * knn
@@ -235,15 +308,7 @@ void pqnn_search(params* input) {
 }
 
 
-int main(int argc, char** argv) {
-	//AGGIUNTO DAL TEAM9 PER L'USO DEL RANDOM
-	time_t random=time(NULL);
-	#ifdef DEBUG_TIME
-		random=4444;
-	#endif
-	printf("seme casuale:%i\n",random);
-	srand(random);
-	
+int main(int argc, char** argv) {	
 	char fname[256];
 	int i, j;
 	
@@ -259,13 +324,14 @@ int main(int argc, char** argv) {
 	input->knn = 1;
 	input->m = 8;
 	input->k = 256;
-	input->kc = 8192;
+	input->kc = 150;
 	input->w = 16;
 	input->eps = 0.01;
 	input->tmin = 10;
 	input->tmax = 100;
 	input->silent = 0;
 	input->display = 0;
+	input->nr=-1;
 
 	//
 	// Legge i valori dei parametri da riga comandi
@@ -402,7 +468,8 @@ int main(int argc, char** argv) {
 	sprintf(fname, "%s.ds", input->filename);
 	input->ds = load_data(fname, &input->n, &input->d);
 	
-	input->nr = input->n/20;
+	if(input->nr==-1) input->nr = input->n/20;
+    else if(input->nr==0) input->nr=input->n;
 
 	sprintf(fname, "%s.qs", input->filename);
 	input->qs = load_data(fname, &input->nq, &input->d);
@@ -430,8 +497,19 @@ int main(int argc, char** argv) {
 	//
 	// Costruisce i quantizzatori
 	//
-	input->codebook=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->codebookp=(float*)(get_block(sizeof(float),input->k*input->d));
+	input->codebookc=(float*)(get_block(sizeof(float),input->kc*input->d));
+	input->rx=(float*)(get_block(sizeof(float),input->nq*input->d*input->w));
+	input->ry=(float*)(get_block(sizeof(float),input->n*input->d));
 	input->map=(int*)(get_block(sizeof(int),input->m*input->n));
+	input->mapc=(int*)(get_block(sizeof(int),input->m*input->nr));
+	input->mapyc =(int*)(get_block(sizeof(int),input->n));
+	input->pqy =(int*)(get_block(sizeof(int),input->m*input->n));
+	input->mapxw =(int*)(get_block(sizeof(int),input->nq*input->w));
+	input->codemap =(int*)(get_block(sizeof(int),(input->n+1)*input->kc));
+	input->ANN_values=calloc(input->nq*input->knn,sizeof(double));
+	input->ANN = calloc(input->nq*input->knn,sizeof(int));
+	
 	
 	clock_t t = clock();
 	pqnn_index(input);
@@ -446,7 +524,6 @@ int main(int argc, char** argv) {
 	// Determina gli ANN
 	//
 	
-	input->ANN = calloc(input->nq*input->knn,sizeof(int));
 
 	t = clock();
 	pqnn_search(input);
@@ -456,7 +533,10 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
+	printf("\n\n########STAMPA DEGLI INDICI!########\n");
 	matprintmi(input->knn,input->nq,input->ANN);
+	printf("\n\n########STAMPA VALORI!########\n");
+	matprintmd(input->knn,input->nq,input->ANN_values);
 	
 	//
 	// Salva gli ANN
@@ -476,8 +556,16 @@ int main(int argc, char** argv) {
  		save_ANN(input->filename, input->ANN, input->nq, input->knn);
 	}
 
-	free_block(input->codebook);
+	free_block(input->codebookp);
+	free_block(input->codebookc);
 	free_block(input->map);
+	free_block(input->ANN_values);
+	free_block(input->codemap);
+	free_block(input->mapxw);
+	free_block(input->pqy);
+	free_block(input->mapyc);
+	free_block(input->ry);
+	free_block(input->rx);
 	
 	if (!input->silent)
 		printf("\nDone.\n");

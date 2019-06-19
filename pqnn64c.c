@@ -215,14 +215,14 @@ void save_ANN(char* filename, int* ANN, int nq, int knn) {
 
 /*
  *	pqnn_index
- * 	========== ==
+ * 	============
  */
 void pqnn_index(params* input) {
 	
     // -------------------------------------------------
     // Codificare qui l'algoritmo di indicizzazione
     // -------------------------------------------------
-    //pqnn64_index(input); // Chiamata funzione assembly
+
 	int n=input->n;
     if(! input->exaustive){
 		n=input->nr;
@@ -287,7 +287,7 @@ void pqnn_search(params* input) {
     // Codificare qui l'algoritmo di interrogazione
     // -------------------------------------------------
     
-    //pqnn64_search(input); // Chiamata funzione assembly
+
 	if(input->exaustive){
 		if(input->symmetric){
 			//se simmetrica
@@ -533,7 +533,6 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
-
 	printf("\n\n########STAMPA DEGLI INDICI!########\n");
 	matprintmi(input->knn,input->nq,input->ANN);
 	printf("\n\n########STAMPA VALORI!########\n");

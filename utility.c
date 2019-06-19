@@ -8,7 +8,9 @@
 #include <stdlib.h>
 
 
-//extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
+extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
+extern void diffvf_asm(int d, float *x, int xi, float *y, int yi,float * res, int ri);
+extern void azzera_array(int d, float*v);
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
@@ -25,7 +27,6 @@
     //#define DEBUG_COPYV
     //#define DEBUG_MINDIST
     //#define DEBUG_INITCODEBOOK
-    //#define DEBUG_DISTQ
     //#define DEBUG_OBIETTIVO
     //#define DEBUG_EQUALS
     //#define DEBUG_NUOVICENTROIDI
@@ -44,40 +45,63 @@
 #ifndef ANGIULLI
     #define MATRIX float*
     typedef struct {
-	char* filename; //
-	MATRIX ds; // data set 
-	MATRIX qs; // query set
-	int n; // numero di punti del data set
-	int d; // numero di dimensioni del data/query set
-	int nq; // numero di punti del query set
-	int knn; // numero di ANN approssimati da restituire per ogni query
-	int m; // numero di gruppi del quantizzatore prodotto
-	int k; // numero di centroidi di ogni sotto-quantizzatore
-	int kc; // numero di centroidi del quantizzatore coarse
-	int w; // numero di centroidi del quantizzatore coarse da selezionare per la ricerca non esaustiva
-	int nr; // dimensione del campione dei residui nel caso di ricerca non esaustiva
-	float eps; // 
-	int tmin; //
-	int tmax; //
-	int exaustive; // tipo di ricerca: (0=)non esaustiva o (1=)esaustiva
-	int symmetric; // tipo di distanza: (0=)asimmetrica ADC o (1=)simmetrica SDC
-	int silent;
-	int display;
-	// nns: matrice row major order di interi a 32 bit utilizzata per memorizzare gli ANN
-	// sulla riga i-esima si trovano gli ID (a partire da 0) degli ANN della query i-esima
-	//
-	int* ANN; 
-	//
-	// Inserire qui i campi necessari a memorizzare i Quantizzatori
-	//
-	MATRIX codebookp;
-	MATRIX codebookc;
-	double* ANN_values;
-	int * map;
-	int * mapc;
-	// ...
-	//
-} params;
+        char* filename; //
+        MATRIX ds; // data set 
+        MATRIX qs; // query set
+        int n; // numero di punti del data set
+        int d; // numero di dimensioni del data/query set
+        int nq; // numero di punti del query set
+        int knn; // numero di ANN approssimati da restituire per ogni query
+        int m; // numero di gruppi del quantizzatore prodotto
+        int k; // numero di centroidi di ogni sotto-quantizzatore
+        int kc; // numero di centroidi del quantizzatore coarse
+        int w; // numero di centroidi del quantizzatore coarse da selezionare per la ricerca non esaustiva
+        int nr; // dimensione del campione dei residui nel caso di ricerca non esaustiva
+        float eps; // 
+        int tmin; //
+        int tmax; //
+        int exaustive; // tipo di ricerca: (0=)non esaustiva o (1=)esaustiva
+        int symmetric; // tipo di distanza: (0=)asimmetrica ADC o (1=)simmetrica SDC
+        int silent;
+        int display;
+        // nns: matrice row major order di interi a 32 bit utilizzata per memorizzare gli ANN
+        // sulla riga i-esima si trovano gli ID (a partire da 0) degli ANN della query i-esima
+        //
+        int* ANN; 
+        //
+        // Inserire qui i campi necessari a memorizzare i Quantizzatori
+        //
+        MATRIX codebookp;
+        MATRIX codebookc;
+        double* ANN_values;
+        int * map;
+
+        //VALORI ESCLUSIVI DI NOT_EXAUSTIVE
+
+        /** map qc(YR) */
+        int * mapc;
+        /** map qc(y) */
+        int *mapyc;
+        /** pq(ry) */
+        int *pqy;
+        //w centroidi associati a x
+        int *mapxw; // nq(righe)*w(colonne)
+        /** lista dei punti più vicini ai centroidi coarse, struttura:
+         * 
+         * (riga/centroide)j -> [ indice ds1....indice ds c, 0....0 , numero punti effettivamente presenti c ]
+         *
+         * matrice (n+1)xkc
+         * 
+        */
+        int *codemap;
+        /** x-qc(y) */
+        MATRIX rx; // dim=nq*d*w
+        /** y-qc(y) */
+        MATRIX ry;
+
+        // ...
+        //
+    } params;
 #endif
 
 
@@ -113,22 +137,58 @@
 #define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*(SIZE)))
 
 //#### LISTA METODI-MACRO ####
-/** calcolo distanza euclidea al quadrato */
-#define DIST_E_2(D,X,XI,Y,YI,RIS) \
-{float somma=0,\
-differenza=0;\
-for(register int indice_distanza=0;indice_distanza<D;indice_distanza++){\
-        differenza=X[(XI)+indice_distanza]-Y[(YI)+indice_distanza];\
-        differenza*=differenza;\
-        somma+=differenza;\
-    }\
-RIS=somma;}\
+#ifdef ASM
+    /**
+     * args:
+     * -D  = numero di elementi per vettore
+     * -X  = matrice primo vettore
+     * -XI = indice di riga di X
+     * -Y  = matrice secondo vettore
+     * -YI = indice di riga Y
+     * -RIS= variabile dove inserire il risultato
+     * 
+     * descr:
+     * -calcola la distanza euclidea al quadrato tra il vettore nella riga XI di dimensione D  di X e quello di Y in riga YI, il risultato lo mette in RIS
+     */
+    #define DIST_E_2(D,X,XI,Y,YI,RIS) RIS=dist_2_asm(D,X,XI,Y,YI);
+
+#else
+    /**
+     * args:
+     * -D  = numero di elementi per vettore
+     * -X  = matrice primo vettore
+     * -XI = indice di riga di X
+     * -Y  = matrice secondo vettore
+     * -YI = indice di riga Y
+     * -RIS= variabile dove inserire il risultato
+     * 
+     * descr:
+     * -calcola la distanza euclidea al quadrato tra il vettore nella riga XI di dimensione D  di X e quello di Y in riga YI, il risultato lo mette in RIS
+     */
+    #define DIST_E_2(D,X,XI,Y,YI,RIS) \
+    {float somma=0,\
+    differenza=0;\
+    for(register int indice_distanza=0;indice_distanza<D;indice_distanza++){\
+            differenza=X[(XI)+indice_distanza]-Y[(YI)+indice_distanza];\
+            differenza*=differenza;\
+            somma+=differenza;\
+        }\
+    RIS=somma;}\
+    
+#endif
 
 #define DIST_E(D, X, XI, Y, YI, RIS) DIST_E_2(D,X,XI,Y,YI,RIS); RIS=sqrt(RIS); 
 
-#define DIFFVF(D,X,XI,Y,YI,RES,RI)\
-for(register int indice_diffvf=0;indice_diffvf<D;indice_diffvf++)\
-    RES[(RI)+indice_diffvf]=X[(XI)+indice_diffvf]-Y[(YI)+indice_diffvf];\
+#ifdef ASM
+    #define DIFFVF(D,X,XI,Y,YI,RES,RI) diffvf_asm(D,X,XI,Y,YI,RES,RI);
+   
+#else
+     #define DIFFVF(D,X,XI,Y,YI,RES,RI)\
+        for(register int indice_diffvf=0;indice_diffvf<D;indice_diffvf++)\
+            RES[(RI)+indice_diffvf]=X[(XI)+indice_diffvf]-Y[(YI)+indice_diffvf];
+
+#endif
+
 
 #define COPYV(D,DEST,DESTI,SRC,SRCI)\
 for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
@@ -148,39 +208,7 @@ pq(d,m,k,codebook,n,dataset,map);\
 
 
 
-/**
- * argomenti:
- * -'d'  : numero elementi per vettore
- * -'x'  : primo elemento di sottrazione
- * -'xi' : indice di partenza (non moltiplicato) per x 
- * -'y'  : secondo elemento di sottrazione
- * -'yi' : indice di partenza (non moltiplicato) per y
- * -'res': vettore in cui si memorizzeranno i risultati
- * -'ri' : indice di partenza (non moltiplicato) per res
- * 
- * descr:
- * -sottrae gli elementi del vettore x dagli elementi del vettore y (realizza res[w]=x[i]-y[j] per i che va da xi a xi+d, j che va da yi a yi+d e w che va da ri a ri+d)
- */
 
-void diffvf(int d, float* x, int xi, float *y, int yi, float *res, int ri){
-    #ifdef DEBUG_DIFFVF
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'diffvf' #####\n");
-    #endif
-    int i;
-    #ifdef DEBUG_DIFFVF
-        printf("sottrazione tra:\n");
-        printfv(d,x,xi);
-        printf("e :\n");
-        printfv(d,y,yi);
-    #endif
-    for(i=0; i<d; i++)
-        {res[ri+i]=x[xi+i]-y[yi+i];}
-
-    #ifdef DEBUG_DIFFVF
-        printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'diffvf' #####\n");
-    #endif
-
-}
 
 
 
@@ -311,7 +339,7 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
  * -calcola la distanza al quadrato tra un punto e i suoi sottocentroidi
  * TODO valutare di eliminare 
  */
-float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
+/* float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
     #ifdef DEBUG_DISTQ
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
     #endif
@@ -329,7 +357,7 @@ float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
         printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
     #endif
     return distz;
-}
+} */
 
 /**
  * argomenti:
@@ -346,16 +374,23 @@ double obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook
     #endif
 
  
-    int i;
-    double somma=0,parziale;
-    for(i=0;i<n;i++){
+    int i,icent,w,dstar=d/m;
+    double smm=0,parziale;
+    /* for(i=0;i<n;i++){
         parziale=dist_q(d, m, dataset,i,map,codebook);
         somma+=parziale;
+    } */
+    for(i=0;i<n;i++){
+        for(w=0;w<m;w++){
+            icent=map[MATRIX2_INDEX(m,i,w)];
+            DIST_E_2(dstar,dataset,MATRIX2_INDEX(d,i,w*dstar),codebook,MATRIX2_INDEX(d,icent,w*dstar),parziale);
+
+        }
     }
     #ifdef DEBUG_OBIETTIVO
         printf("\n\n#### FINE SEQUENZA DI DEBUG DEL METODO 'obiettivo' #####\n");
     #endif
-    return somma;
+    return smm;
 }
 
 
@@ -417,13 +452,16 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
         #ifdef DEBUG_NUOVICENTROIDI
             printf("analisi centroide i=%i\n",i);
         #endif
-        for(z=0;z<d;z++){
+        /* for(z=0;z<d;z++){
             nc[z]=0;
-        }
+            
+        } */
+        azzera_array(d,nc);
+
         for (w=0; w<m; w++){ // per ogni sottocentroide
-        #ifdef DEBUG_NUOVICENTROIDI
-            printf("in analisi sottocentroide w=%i\n",w);
-        #endif
+            #ifdef DEBUG_NUOVICENTROIDI
+                printf("in analisi sottocentroide w=%i\n",w);
+            #endif
             c=0;
             for(j=0;j<n;j++){ // per ogni elemento della mappa
                 icent=map[m*j+w];
@@ -447,7 +485,6 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
             }
             if(c==0) c=1;
             for(z=0;z<dstar;z++){
-                //possibile mettere sotto?
                 codebook[i*d+w*dstar+z]=nc[w*dstar+z]/c;
             }//z
         }//w
