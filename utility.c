@@ -109,11 +109,11 @@ extern void azzera_array(int d, float*v);
 
 /**
  * args:
- * -K:numero colonne
- * -M:numero larghezza (numero celle in cella)
- * -I:indice riga
- * -J:indice colonna
- * -W:indice tridimensionale
+ * -K = numero colonne
+ * -M = numero larghezza (numero celle in cella)
+ * -I = indice riga
+ * -J = indice colonna
+ * -W = indice tridimensionale
  * 
  * descr:
  * -calcola l'indice di una matrice cubica vettorizzata : I*K*M+J*M+W
@@ -121,9 +121,9 @@ extern void azzera_array(int d, float*v);
 #define MATRIX3_INDEX(K,M,I,J,W) (I)*(K)*(M)+(J)*(M)+(W)
 /** 
  * args:
- * -M:numero colonne
- * -I:indice riga
- * -J:indice colonna
+ * -M = numero colonne
+ * -I = indice riga
+ * -J = indice colonna
  * 
  * descr:
  * -calcola l'indice di accesso in una matrice quadrata vettorizzata : M*I+J
@@ -131,7 +131,7 @@ extern void azzera_array(int d, float*v);
 #define MATRIX2_INDEX(M,I,J) (M)*(I)+(J)
 /** indice ultima cella riga i-esima di una matrice con larghezza d : ((I+1)*D-1)*/
 #define LAST_INDEX(D,I) (((I)+1)*(D)-1)
-/* calcolo delta */
+/** calcolo delta */
 #define DELTA(OLD,NEW) (float)(abs(OLD-NEW)/OLD)
 
 #define ASSEGNA_BLOCCO(TYPE,SIZE) (TYPE*)(malloc(sizeof(TYPE)*(SIZE)))
@@ -140,12 +140,12 @@ extern void azzera_array(int d, float*v);
 #ifdef ASM
     /**
      * args:
-     * -D  = numero di elementi per vettore
-     * -X  = matrice primo vettore
-     * -XI = indice di riga di X
-     * -Y  = matrice secondo vettore
-     * -YI = indice di riga Y
-     * -RIS= variabile dove inserire il risultato
+     * -D   = numero di elementi per vettore
+     * -X   = matrice primo vettore
+     * -XI  = indice di riga di X
+     * -Y   = matrice secondo vettore
+     * -YI  = indice di riga Y
+     * -RIS = variabile dove inserire il risultato
      * 
      * descr:
      * -calcola la distanza euclidea al quadrato tra il vettore nella riga XI di dimensione D  di X e quello di Y in riga YI, il risultato lo mette in RIS
@@ -155,12 +155,12 @@ extern void azzera_array(int d, float*v);
 #else
     /**
      * args:
-     * -D  = numero di elementi per vettore
-     * -X  = matrice primo vettore
-     * -XI = indice di riga di X
-     * -Y  = matrice secondo vettore
-     * -YI = indice di riga Y
-     * -RIS= variabile dove inserire il risultato
+     * -D   = numero di elementi per vettore
+     * -X   = matrice primo vettore
+     * -XI  = indice di riga di X
+     * -Y   = matrice secondo vettore
+     * -YI  = indice di riga Y
+     * -RIS = variabile dove inserire il risultato
      * 
      * descr:
      * -calcola la distanza euclidea al quadrato tra il vettore nella riga XI di dimensione D  di X e quello di Y in riga YI, il risultato lo mette in RIS
@@ -177,25 +177,113 @@ extern void azzera_array(int d, float*v);
     
 #endif
 
+/**
+ * args:
+ * -D   = numero di elementi per vettore
+ * -X   = matrice primo vettore
+ * -XI  = indice di riga di X
+ * -Y   = matrice secondo vettore
+ * -YI  = indice di riga Y
+ * -RIS = variabile dove inserire il risultato
+ * 
+ * descr:
+ * -calcola la distanza euclidea tra il vettore nella riga XI di dimensione D  di X e quello di Y in riga YI, il risultato lo mette in RIS
+ */
 #define DIST_E(D, X, XI, Y, YI, RIS) DIST_E_2(D,X,XI,Y,YI,RIS); RIS=sqrt(RIS); 
 
 #ifdef ASM
+    /**
+     * args:
+     * -D   = numero di elementi per vettore
+     * -X   = matrice primo vettore
+     * -XI  = indice di riga di X
+     * -Y   = matrice secondo vettore
+     * -YI  = indice di riga Y
+     * -RIS = variabile dove inserire il risultato
+     * 
+     * descr:
+     * -calcola la differenza tra D elementi dei vettori X e Y a partire dall'indice XI e YI (rispettivamente) e salva il risultato in RES a partire dall'indice RI
+     */
     #define DIFFVF(D,X,XI,Y,YI,RES,RI) diffvf_asm(D,X,XI,Y,YI,RES,RI);
    
 #else
+    /**
+     * args:
+     * -D   = numero di elementi per vettore
+     * -X   = matrice primo vettore
+     * -XI  = indice di riga di X
+     * -Y   = matrice secondo vettore
+     * -YI  = indice di riga Y
+     * -RIS = variabile dove inserire il risultato
+     * 
+     * descr:
+     * -calcola la differenza tra D elementi dei vettori X e Y a partire dall'indice XI e YI (rispettivamente) e salva il risultato in RES a partire dall'indice RI
+     */
      #define DIFFVF(D,X,XI,Y,YI,RES,RI)\
         for(register int indice_diffvf=0;indice_diffvf<D;indice_diffvf++)\
             RES[(RI)+indice_diffvf]=X[(XI)+indice_diffvf]-Y[(YI)+indice_diffvf];
 
 #endif
 
-
+/**
+ * args:
+ * -D     = numero di elementi per vettore
+ * -DEST  = vettore destinazione
+ * -DESTI = indice di riga di DEST
+ * -SRC   = vettore sorgente
+ * -SRCI  = indice di riga SRC
+ * 
+ * descr:
+ * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
+ */
 #define COPYV(D,DEST,DESTI,SRC,SRCI)\
 for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
 
-#define KMEANS_STEP(d,m,n,dataset,map,k,codebook,t)\
+/**
+ * args:
+ * -d        = numero di elementi per vettore
+ * -m        = numero di sottovettori
+ * -n        = numero elementi del dataset
+ * -dataset  = set di dati
+ * -map      = mappa di corrispondenza dataset-centroide associato
+ * -k        = numero elementi del codebook
+ * -codebook = set di centroidi
+ * 
+ * descr:
+ * -step ripetitivo all'interno del KMEANS, genera nuovi centroidi sulla media dei punti aggregati ad ogni centroide o inserisce una serie di zeri sui centroidi che non hanno alcun punto associato
+ */
+#define KMEANS_STEP(d,m,n,dataset,map,k,codebook)\
 nuovicentroidi(d,m,n,dataset,map,k,codebook);\
-pq(d,m,k,codebook,n,dataset,map);\
+pq(d,m,k,codebook,n,dataset,map);
+
+#ifdef ASM
+    /**
+     * args:
+     * -D  = numero elementi per vettore
+     * -A  = vettore da inizializzare
+     * -AI = indice iniziale di A
+     * -IV = elemento con cui inizializzare il vettore
+     * 
+     * descr:
+     * -inserisce il valore IV in D elementi di A a partire dall'indice AI
+     */
+    #define INIT_ARRAY(D,A,AI,IV) azzera_array(D,V);
+#else
+    /**
+     * args:
+     * -D  = numero elementi per vettore
+     * -A  = vettore da inizializzare
+     * -AI = indice iniziale di A
+     * -IV = elemento con cui inizializzare il vettore
+     * 
+     * descr:
+     * -inserisce il valore IV in D elementi di A a partire dall'indice AI
+     */
+    #define INIT_ARRAY(D,A,AI,IV)\
+        for( register int init_index=0; init_index<d; init_index++){\
+            A[(AI)+init_index]=IV;\
+        }
+#endif
 
 
 
@@ -452,11 +540,8 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
         #ifdef DEBUG_NUOVICENTROIDI
             printf("analisi centroide i=%i\n",i);
         #endif
-        /* for(z=0;z<d;z++){
-            nc[z]=0;
-            
-        } */
-        azzera_array(d,nc);
+        
+        INIT_ARRAY(d,nc,0,0);
 
         for (w=0; w<m; w++){ // per ogni sottocentroide
             #ifdef DEBUG_NUOVICENTROIDI
@@ -586,7 +671,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
     #endif
 
     while(t++<tmin){
-        KMEANS_STEP(d,m,n,dataset,map,k,codebook,t);
+        KMEANS_STEP(d,m,n,dataset,map,k,codebook);
         #ifdef DEBUG_KMEANS
             printf("nuovi centroidi al passo %i\n",t-1);
             printmf(d,k,codebook);
@@ -601,7 +686,7 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
         
     // abbiamo fatto il numero minimo di passi, andiamo alla seconda condizione
     while(tmax>=t++ && delta>eps ){
-        KMEANS_STEP(d,m,n,dataset,map,k,codebook,t);
+        KMEANS_STEP(d,m,n,dataset,map,k,codebook);
         nuovo_ob= obiettivo(d,m,n,dataset,map,codebook);
         #ifdef DEBUG_KMEANS
             printf("stampa obiettivo passo t=%i\nob=%f\n",t-1,nuovo_ob);
