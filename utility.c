@@ -254,7 +254,7 @@ pq(d,m,k,codebook,n,dataset,map);
      * descr:
      * -inserisce il valore IV in D elementi di A a partire dall'indice AI
      */
-    #define INIT_ARRAY(D,A,AI,IV) azzera_array(D,V);
+    #define INIT_ARRAY(D,A,AI,IV) azzera_array(D,A);
 #else
     /**
      * args:
@@ -298,7 +298,7 @@ pq(d,m,k,codebook,n,dataset,map);
      * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
      */
     #define COPYV(D,DEST,DESTI,SRC,SRCI)\
-        for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
+        for(int indicecopia=0;indicecopia<D;indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
 #endif
 
 
@@ -391,11 +391,11 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
 
     int i=0,j=0;
     for(i=0; i<k && i<n ;i++){
-        copyv(d,codebook,i*d,dataset,i*d);
+        COPYV(d,codebook,i*d,dataset,i*d);
     }//for i
     //nel caso k>n
     for(; i<k ;i++){        
-        copyv(d,codebook,i*d,dataset,n*d-1);
+        COPYV(d,codebook,i*d,dataset,n*d-1);
     }//for i
 
     #ifdef DEBUG_INITCODEBOOK

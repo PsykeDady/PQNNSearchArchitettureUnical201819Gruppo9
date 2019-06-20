@@ -366,7 +366,7 @@ ENDDIFF:
 
 copyv_asm:
 
-v;oid copyv(int d, float* dest, int desti, float *src, int srci){
+;void copyv(int d, float* dest, int desti, float *src, int srci){
     
  ;   for(int i=0;i<d;i++){
 ;      dest[desti+i]=src[srci+i];
@@ -388,7 +388,7 @@ v;oid copyv(int d, float* dest, int desti, float *src, int srci){
 
 LOOP32COPYV:
     cmp edi, esi ; i<d - p * r + 1 ?
-    jge LOOP8COPYV
+    jge END_LOOP_COPYV_32
     
     copyv_step
     copyv_step
@@ -425,14 +425,14 @@ LOOP32COPYV:
 
     jmp LOOP32COPYV
 
-LOOP8COPYV
+END_LOOP_COPYV_32:
     mov     esi, ebx ; esi = d  
     sub     esi, 4*8 ; esi = d - p *r
     inc     esi     ; esi = d - p * r + 1
 
-LOOPP8COPYV:
+LOOP8COPYV:
     cmp edi, esi ; i<d-p*r+1?
-    jge LOOP2COPYV
+    jge END_LOOP_COPYV8
 
     copyv_step
     copyv_step
@@ -443,23 +443,23 @@ LOOPP8COPYV:
     copyv_step
     copyv_step
 
-    jmp LOOPP8COPYV
+    jmp LOOP8COPYV
 
-LOOP2COPYV:
+END_LOOP_COPYV8:
     mov     esi, ebx ; esi = d  
     sub     esi, 4*2 ; esi = d - p *r
     inc     esi     ; esi = d - p * r + 1
 
-LOOPP2COPYV:
+LOOP2COPYV:
     cmp edi, esi ; i<d-p*r+1?
-    jge LOOPSCOPYV
+    jge LOOPCOPYV
 
     copyv_step
     copyv_step
 
-    jmp LOOPP2COPYV
+    jmp LOOP2COPYV
 
-LOOPSCOPYV:
+LOOPCOPYV:
     cmp edi, ebx
     jge ENDCOPYV
 
@@ -477,7 +477,7 @@ LOOPSCOPYV:
 
 ; incremento di i = i + 1
     inc edi
-    jmp LOOPSCOPYV
+    jmp LOOPCOPYV
 
 ENDCOPYV:
     pop esi
@@ -486,7 +486,8 @@ ENDCOPYV:
     pop ebx
     pop eax
     pop ebp
-    
+    ret
+
 global azzera_array
 
 azzera_array:
