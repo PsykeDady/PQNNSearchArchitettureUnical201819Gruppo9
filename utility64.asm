@@ -47,21 +47,26 @@ section .text
 
 
 %macro copyv_step 0
+; RDI = d, RSI = dest*, RDX = desti, RCX = src*, R8 = srci | r10 = i, r11 = d-p*r+1 
+
 ;inserimento src in ymm8 (packed)
-    mov      r12, rdx ; r12=srcii
+    mov      r12, r8 ; r12=srci
     add      r12, r10 ; r12=srci+i
-    mov      r13, rsi ; r13= [x]
-    vmovups   ymm8, [r13+r12*4]
+    vmovups   ymm8, [rcx+r12*4]
 
 
 ;inserimento in dest(packed)
-    mov      r12, rax ; r12=desti
+    mov      r12, rdx ; r12=desti
     add      r12, r10 ; r12=desti+i
-    mov      r13, r9 ; r13= [dest]
-    vmovups  [r13+r12*4], ymm8  ;dest[desti+1]=src[srcii+i]
+    vmovups  [rsi+r12*4], ymm8  ;dest[desti+1]=src[srcii+i]
 
 ;incremento i = i+8
     add      r10, 8
+%endmacro
+
+%macro azzera_array_step 0
+    vmovups [rsi+r15*4], ymm7
+    add r15,8
 %endmacro
 
 	
@@ -362,23 +367,12 @@ copyv_asm:
 ;   for(int i=0;i<d;i++){
 ;      dest[desti+i]=src[srci+i];
 
-; R10 = i     R11 = d-p*r+1 oppure d-p+1    r12 = srci + i   R13 = [src]  oppure [dest]
-
-; RAX = desti
-
-
-
-    push    rbp ; RDI = d, RSI = dest*, RDX = desti, RCX = src*, R9 = srci
+; RDI = d, RSI = dest*, RDX = desti, RCX = src*, R8 = srci | r10 = i, r11 = d-p*r+1 R9
+    push    rbp 
     mov     rbp, rsp
-    
-    push    rax
-    push    rcx
-    push    rdx
-    push    rdi
-    push    rsi
+
 
     xor     r10, r10 ; i = 0
-    ;???????????mov     rax, [rbp+24] ; rax = srci
     mov     r11, rdi; r11 = d  
     sub     r11, 8*32 ; r11 = d - p*r
     inc     r11     ; r11 = d - p*r + 1
@@ -456,7 +450,6 @@ LOOP2COPYV:
     cmp r10, r11 ; i<d-p*r+1? // da provare se è possibile fare direttamente [rbp+8]-4+1
     jge LOOPSCOPYV
  
-    
     copyv_step
     copyv_step
 
@@ -465,18 +458,16 @@ LOOP2COPYV:
 LOOPSCOPYV:
     cmp r10, rdi ; i<d?
     jge ENDCOPYV
-
+; RDI = d, RSI = dest*, RDX = desti, RCX = src*, R8 = srci
 ;inserimento src in xmm9 (scalar)
-    mov      r12, rdx ; r12=srci
+    mov      r12, r8 ; r12=srci
     add      r12, r10 ; r12=srci+i
-    mov      r13, rsi ; r13= [src]
-    vmovss   xmm8, [r13+r12*4]
+    vmovss   xmm8, [rcx+r12*4]
 
 
-    mov      r12, rax ; r12=desti
+    mov      r12, rdx ; r12=desti
     add      r12, r10 ; r12=desti+i
-    mov      r13, r9 ; r13= [dest]
-    vmovss  [r13+r12*4], xmm8  ;dest[desti+1]=src[srci+i]
+    vmovss   [rsi+r12*4], xmm8  ;dest[desti+i]=src[srci+i]
 ;incremento i = i+1
     inc     r10
 
@@ -484,11 +475,112 @@ LOOPSCOPYV:
 
 ENDCOPYV:
 
-    pop rsi
-    pop rdi
-    pop rdx
-    pop rcx
-    pop rax
-    pop rbp
+    pop rbp 
+    ret
+
+
+global azzera_array
+
+azzera_array:
+    ; void azzera_array(int d, float*v);
+    ; rdi=d rsi=v | r15=i ymm7=[0,0,0,0]
+
+    push rbp
+    mov rbp,rsp
+
+    xor r15,r15; i=0
+    vxorps ymm7,ymm7
+
+    mov r14,rdi
+    sub r14, 8*32 ; d-p*r+1
+    inc r14
+
+LOOP_AZZERA_ARRAY_32:
+    cmp r15,r14; i<(d-p*r+1)?
+    jge END_LOOP_AZZERA_ARRAY_32
+
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_32
+
+END_LOOP_AZZERA_ARRAY_32:
+    mov r14,rdi
+    sub r14, 8*8 ; d-p*r+1
+    inc r14
+
+LOOP_AZZERA_ARRAY_8:
+    cmp r15,r14; i<(d-p*r+1)?
+    jge END_LOOP_AZZERA_ARRAY_8
+
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_8
+
+END_LOOP_AZZERA_ARRAY_8:
+
     
+    mov r14,rdi
+    sub r14, 8*2; d-p*r+1
+    inc r14
+
+LOOP_AZZERA_ARRAY_2:
+    cmp r15,r14; i<(d-p*r+1)?
+    jge LOOP_AZZERA_ARRAY
+
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_2
+
+
+LOOP_AZZERA_ARRAY:
+
+    cmp r15,rdi; i<d
+    jge END_LOOP_AZZERA_ARRAY
+
+    vmovss [rsi+r15*4], xmm7
+    add rsi,8
+
+    jmp LOOP_AZZERA_ARRAY
+
+END_LOOP_AZZERA_ARRAY:
+    pop rbp
     ret

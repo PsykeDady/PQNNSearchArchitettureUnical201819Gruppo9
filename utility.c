@@ -284,7 +284,7 @@ pq(d,m,k,codebook,n,dataset,map);
      * descr:
      * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
      */
-    #define COPYV(D,DEST,DESTI,SRC,SRCI) copyv_asm(D,DEST,DESTI,SRC,SRCI);
+    #define COPYV(D,DEST,DESTI,SRC,SRCI) copyv_asm(D,DEST,DESTI*D,SRC,SRCI*D);
 #else 
     /**
      * args:
@@ -391,11 +391,11 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
 
     int i=0,j=0;
     for(i=0; i<k && i<n ;i++){
-        COPYV(d,codebook,i*d,dataset,i*d);
+        COPYV(d,codebook,i,dataset,i);
     }//for i
     //nel caso k>n
     for(; i<k ;i++){        
-        COPYV(d,codebook,i*d,dataset,n*d-1);
+        COPYV(d,codebook,i,dataset,n-1);
     }//for i
 
     #ifdef DEBUG_INITCODEBOOK
