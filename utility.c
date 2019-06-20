@@ -227,20 +227,6 @@ extern void azzera_array(int d, float*v);
 
 /**
  * args:
- * -D     = numero di elementi per vettore
- * -DEST  = vettore destinazione
- * -DESTI = indice di riga di DEST
- * -SRC   = vettore sorgente
- * -SRCI  = indice di riga SRC
- * 
- * descr:
- * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
- */
-#define COPYV(D,DEST,DESTI,SRC,SRCI)\
-for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
-
-/**
- * args:
  * -d        = numero di elementi per vettore
  * -m        = numero di sottovettori
  * -n        = numero elementi del dataset
@@ -285,6 +271,35 @@ pq(d,m,k,codebook,n,dataset,map);
         }
 #endif
 
+#ifdef ASM
+    /**
+     * args:
+     * -D     = numero di elementi per vettore
+     * -DEST  = vettore destinazione
+     * -DESTI = indice di riga di DEST
+     * -SRC   = vettore sorgente
+     * -SRCI  = indice di riga SRC
+     * 
+     * descr:
+     * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
+     */
+    #define COPYV(D,DEST,DESTI,SRC,SRCI) copyv_asm(D,DEST,DESTI,SRC,SRCI);
+#else 
+    /**
+     * args:
+     * -D     = numero di elementi per vettore
+     * -DEST  = vettore destinazione
+     * -DESTI = indice di riga di DEST
+     * -SRC   = vettore sorgente
+     * -SRCI  = indice di riga SRC
+     * 
+     * descr:
+     * -copia D elementi dal vettore SRC al vettore DEST partendo dagli indici SRCI e DESTI rispettivamente
+     */
+    #define COPYV(D,DEST,DESTI,SRC,SRCI)\
+        for(int indicecopia=0;indicecopia<D,indicecopia++) DEST[(DESTI)*(D)+indicecopia]=SRC[(SRCI)*(D)+indicecopia];
+#endif
+
 
 
 
@@ -295,44 +310,18 @@ pq(d,m,k,codebook,n,dataset,map);
 
 
 
-
-
-
-
-
-
-/**
- * argomenti:
- *  -'d' numero elementi da copiare
- *  -'dest' vettore destinazione
- *  -'desti' indice iniziale di dest ( non moltiplicato )
- *  -'src' vettore sorgente
- *  -'srci' indice iniziale vettore sorgente ( non moltiplicato)
- * descrizione: 
- *  copia d elementi dal vettore src ( a partire dall'indice srci) sul vettore dest ( a partire dall'indice desti ) 
- */
-void copyv(int d, float* dest, int desti, float *src, int srci){
-    #ifdef DEBUG_COPYV
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'copyv' #####\n");
-    #endif
-    for(int i=0;i<d;i++){
-        dest[desti+i]=src[srci+i];
-    }
-}
-
 /**
  * argomenti:       
- *  - 'd' dimensione dei singoli vettori
- *  - 'dstar' dimensione sotto vettori ( per algoritmo a sottovettori) 
- *  - 'mi' indice di colonna di partenza (per algoritmo a sottovettori pq)
- *  - 'dataset' insieme di punti da cui prelevare il punto query 
- *  - 'di' indice iniziale del punto query 
- *  - 'k' numero di centroidi nel codebook
- *  - 'codebook' insieme di centroidi (vettori di Rd) 
+ *  - d = dimensione dei singoli vettori
+ *  - dstar = dimensione sotto vettori ( per algoritmo a sottovettori) 
+ *  - mi = indice di colonna di partenza (per algoritmo a sottovettori pq)
+ *  - dataset = insieme di punti da cui prelevare il punto query 
+ *  - di = indice iniziale del punto query 
+ *  - k = numero di centroidi nel codebook
+ *  - codebook = insieme di centroidi (vettori di Rd) 
  * 
- * descrizione:
- *  considerato il punto indicizzato nel dataset a partire dall'indice di (in R^d) si cerca un centroide nel codebook (tra k centroidi) tale da minimizzare la distanza. Ogni distanza viene calcolata con la funzione dist
- * 
+ * descr:
+ *  -considerato il punto indicizzato nel dataset a partire dall'indice di (in R^d) si cerca un centroide nel codebook (tra k centroidi) tale da minimizzare la distanza. Ogni distanza viene calcolata con la funzione dist. 
  * Funziona sia con sottovettori che non, per non usare i sottovettori porre dstar=d e mi=0
  */
 int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* codebook){
