@@ -98,6 +98,7 @@ dist_2_asm:
     mov     eax, [ebp+12] ; eax = [x]
     mov     ebx, [ebp+8] ;ebx = d 
     mov     ecx, [ebp+20] ; ecx = [y]
+
     mov     esi, ebx ; esi = d  
     sub     esi, 4*32 ; esi = d - p*r
     inc     esi     ; esi = d - p*r + 1

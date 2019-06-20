@@ -533,11 +533,12 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
-	printf("\n\n########STAMPA DEGLI INDICI!########\n");
-	matprintmi(input->knn,input->nq,input->ANN);
-	printf("\n\n########STAMPA VALORI!########\n");
-	matprintmd(input->knn,input->nq,input->ANN_values);
-	
+	#ifdef DEBUG	
+		printf("\n\n########STAMPA DEGLI INDICI!########\n");
+		matprintmi(input->knn,input->nq,input->ANN);
+		printf("\n\n########STAMPA VALORI!########\n");
+		matprintmd(input->knn,input->nq,input->ANN_values);
+	#endif
 	//
 	// Salva gli ANN
 	//

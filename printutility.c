@@ -21,9 +21,9 @@ void printfv(int d,float *v,int vi){
 
     printf("[");
     for(int i=0; i< d-1;i++){
-        printf("%f,",v[vi+i]);
+        printf("%.3f,",v[vi+i]);
     }
-    printf("%f",v[vi+d-1]);
+    printf("%.3f",v[vi+d-1]);
     printf("]\n");
 }
 
@@ -85,9 +85,9 @@ void printmf(int d, int n, float *m){
     for(;i<n;i++){
         printf("|");
         for(j=0;j<d-1;j++){
-            printf("%+f,",m[i*d+j]);
+            printf("%+.3f,",m[i*d+j]);
         }
-        printf("%+f|\n",m[i*d+d-1]);
+        printf("%+.3f|\n",m[i*d+d-1]);
     }
 }
 
@@ -139,13 +139,13 @@ void matprintmd(int d, int n, double*matrix){
     for(;i<n-1;i++){
         printf("[");
         for(j=0;j<d-1;j++){
-            printf("%lf,",matrix[i*d+j]);
+            printf("%+.3lf,",matrix[i*d+j]);
         }
-        printf("%lf],",matrix[i*d+d-1]);
+        printf("%+.3lf],",matrix[i*d+d-1]);
     }
     printf("[");
     for(j=0;j<d-1;j++){
-            printf("%lf,",matrix[i*d+j]);
+            printf("%+.3lf,",matrix[i*d+j]);
     }
-    printf("%lf]]",matrix[i*d+d-1]);
+    printf("%+.3lf]]",matrix[i*d+d-1]);
 }

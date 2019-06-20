@@ -15,7 +15,7 @@ extern void copyv_asm(int d, float* dest, int desti, float *src, int srci);
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug
-#define DEBUG 
+//#define DEBUG 
 
 /**
  * lista di flag di debug, commentare/decommentare singolo flag per disabilitare/abilitare le stampe di debug del relativo metodo
@@ -313,12 +313,12 @@ pq(d,m,k,codebook,n,dataset,map);
 
 /**
  * argomenti:       
- *  - d = dimensione dei singoli vettori
- *  - dstar = dimensione sotto vettori ( per algoritmo a sottovettori) 
- *  - mi = indice di colonna di partenza (per algoritmo a sottovettori pq)
- *  - dataset = insieme di punti da cui prelevare il punto query 
- *  - di = indice iniziale del punto query 
- *  - k = numero di centroidi nel codebook
+ *  - d        = dimensione dei singoli vettori
+ *  - dstar    = dimensione sotto vettori ( per algoritmo a sottovettori) 
+ *  - mi       = indice di colonna di partenza (per algoritmo a sottovettori pq)
+ *  - dataset  = insieme di punti da cui prelevare il punto query 
+ *  - di       = indice iniziale del punto query 
+ *  - k        = numero di centroidi nel codebook
  *  - codebook = insieme di centroidi (vettori di Rd) 
  * 
  * descr:
@@ -375,11 +375,11 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
 
 /**
  * argomenti:
- *  -d=dimensione spazio vettoriale
- *  -n= dimensione dataset
- *  -dataset= insieme di punti in Rd
- *  -k= numero di centroidi
- *  -codebook= codebook da riempire
+ *  -d        = dimensione spazio vettoriale
+ *  -n        = dimensione dataset
+ *  -dataset  = insieme di punti in Rd
+ *  -k        = numero di centroidi
+ *  -codebook = codebook da riempire
  * 
  * descrizione:
  * -si riempie il codebook con valori random facenti parte dell'insieme di partenza
@@ -403,48 +403,15 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
     #endif
 }
 
-/**
- * args:
- * -d=numero di elementi a vettore
- * -m=numero di sottovettori
- * -dataset=dataset
- * -i=indice dataset
- * -map=mappa 
- *  dataset-centroide associato
- * -codebook=insieme centroidi
- * 
- * desc:
- * -calcola la distanza al quadrato tra un punto e i suoi sottocentroidi
- * TODO valutare di eliminare 
- */
-/* float dist_q(int d, int m, float*dataset, int i, int * map, float*codebook){
-    #ifdef DEBUG_DISTQ
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
-    #endif
-    int w,j,icent,dstar=d/m;
-    float distz=0,parz;
-    for(w=0; w<m;w++){
-        icent=map[i*m+w];
-        for(j=0; j<dstar;j++){
-            parz=(dataset[i*d+w*dstar+j]-codebook[icent*d+w*dstar+j]);
-            parz*=parz;
-            distz+=parz;
-        }
-    }
-    #ifdef DEBUG_DISTQ
-        printf("\n\n#### INIZIO SEQUENZA DI DEBUG DEL METODO 'dist_q' #####\n");
-    #endif
-    return distz;
-} */
 
 /**
  * argomenti:
- *  - 'd' coordinate del singolo punto
- *  - 'n' numero di righe della map 
- *  - 'map' una matrice che contiene per ogni riga l'indice del relativo centroide
+ *  -d   = coordinate del singolo punto
+ *  -n   = numero di righe della map 
+ *  -map = una matrice che contiene per ogni riga l'indice del relativo centroide
  * 
  * descrizione:
- *  -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
+ * -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
  */
 double obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook){
     #ifdef DEBUG_OBIETTIVO

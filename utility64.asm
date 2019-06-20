@@ -96,6 +96,7 @@ dist_2_asm:
     xor     r10, r10 ; i = 0
     vxorps  ymm8, ymm8 ; somma = 0
     vxorps  ymm10, ymm10 ; somma residua = 0
+    
     mov     r11, rdi; r11 = d  
     sub     r11, 8*32 ; r11 = d - p*r
     inc     r11     ; r11 = d - p*r + 1
