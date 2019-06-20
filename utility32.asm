@@ -46,6 +46,25 @@ section .text
     add edi, 4
 %endmacro
 
+
+%macro copyv_step 0
+;inserimento src in xmm1 (packed)
+    mov      edx, [ebp+24 ; edx=srci
+    add      edx, edi ; edx=xi+i
+    mov      eax, [ebp+20] ; eax= [src]
+    movups   xmm1, [eax+edx*4]
+
+;inserimento in dest (packed)
+    mov     edx, [ebp+16] ; edx=desti
+    add     edx, edi ; edx=ri+i
+    mov     eax, [ebp+12] ; eax= [dest]
+    movups  [eax+edx*4], xmm1 
+
+;incremento i= i + 4
+    add edi, 4
+%endmacro
+
+
 	global dist_2_asm
 
 dist_2_asm:
@@ -324,6 +343,136 @@ LOOPSDIFF:
     jmp LOOPSDIFF
 
 ENDDIFF:
+    pop esi
+    pop edi
+    pop edx
+    pop ebx
+    pop eax
+    pop ebp
+    
+    ret
+
+
+
+
+    global copyv_asm
+
+copyv_asm:
+
+v;oid copyv(int d, float* dest, int desti, float *src, int srci){
+    
+ ;   for(int i=0;i<d;i++){
+;      dest[desti+i]=src[srci+i];
+
+    push    ebp ;[ebp+8]= d, [ebp+12]= dest, [ebp+16]= desti, [ebp+20]= src   [ebp+24]= srci  
+    mov     ebp, esp
+    push    eax
+    push    ebx
+    push    edx
+    push    edi 
+    push    esi
+
+    xor     edi, edi        ;i = 0
+    mov     ebx, [ebp+8]    ; ebx = d
+    mov     esi, ebx        ; esi = d
+    sub     esi, 4*32      ; esi = d - p * r
+    inc     esi         ; esi = d - p * r + 1
+
+
+LOOP32COPYV:
+    cmp edi, esi ; i<d - p * r + 1 ?
+    jge LOOP8COPYV
+    
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+
+    jmp LOOP32COPYV
+
+LOOP8COPYV
+    mov     esi, ebx ; esi = d  
+    sub     esi, 4*8 ; esi = d - p *r
+    inc     esi     ; esi = d - p * r + 1
+
+LOOPP8COPYV:
+    cmp edi, esi ; i<d-p*r+1?
+    jge LOOP2COPYV
+
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+
+    jmp LOOPP8COPYV
+
+LOOP2COPYV:
+    mov     esi, ebx ; esi = d  
+    sub     esi, 4*2 ; esi = d - p *r
+    inc     esi     ; esi = d - p * r + 1
+
+LOOPP2COPYV:
+    cmp edi, esi ; i<d-p*r+1?
+    jge LOOPSCOPYV
+
+    copyv_step
+    copyv_step
+
+    jmp LOOPP2COPYV
+
+LOOPSCOPYV:
+    cmp edi, ebx
+    jge ENDCOPYV
+
+;inserimento srci in xmm1 (scalar)
+    mov      edx, [ebp+24] ; edx=srci
+    add      edx, edi ; edx=xi+i
+    mov      eax, [ebp+20] ; eax= [src]
+    movss   xmm1, [eax+edx*4];xmm1=x[edx]=src + edx
+
+;inserimento in dest (scalar)
+    mov     edx, [ebp+16] ; edx=desti
+    add     edx, edi ; edx=ri+i
+    mov     eax, [ebp+12] ; eax= [dest]
+    movss  [eax+edx*4], xmm1 ;dest[desti+i] = xmm0
+
+; incremento di i = i + 1
+    inc edi
+    jmp LOOPSCOPYV
+
+ENDCOPYV:
     pop esi
     pop edi
     pop edx

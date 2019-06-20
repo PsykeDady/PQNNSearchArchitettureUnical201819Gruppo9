@@ -48,7 +48,27 @@ section .text
     add      r10, 8
 %endmacro
 
-	global dist_2_asm
+
+%macro copyv_step 0
+;inserimento src in ymm8 (packed)
+    mov      r12, rdx ; r12=srcii
+    add      r12, r10 ; r12=srci+i
+    mov      r13, rsi ; r13= [x]
+    vmovups   ymm8, [r13+r12*4]
+
+
+;inserimento in dest(packed)
+    mov      r12, rax ; r12=desti
+    add      r12, r10 ; r12=desti+i
+    mov      r13, r9 ; r13= [dest]
+    vmovups  [r13+r12*4], ymm8  ;dest[desti+1]=src[srcii+i]
+
+;incremento i = i+8
+    add      r10, 8
+%endmacro
+
+	
+    global dist_2_asm
 
 dist_2_asm:
 	; float dist_2(int d, float *x, int xi, float *y, int yi){
@@ -341,6 +361,146 @@ LOOPSDIFF:
     jmp LOOPSDIFF
 
 ENDDIFF:
+
+    pop rsi
+    pop rdi
+    pop rdx
+    pop rcx
+    pop rax
+    pop rbp
+    
+    ret
+
+
+global copyv_asm
+
+copyv_asm:
+
+;void copyv(int d, float* dest, int desti, float *src, int srci){
+;   for(int i=0;i<d;i++){
+;      dest[desti+i]=src[srci+i];
+
+; R10 = i     R11 = d-p*r+1 oppure d-p+1    r12 = srci + i   R13 = [src]  oppure [dest]
+
+; RAX = desti
+
+
+
+    push    rbp ; RDI = d, RSI = dest*, RDX = desti, RCX = src*, R9 = srci
+    mov     rbp, rsp
+    
+    push    rax
+    push    rcx
+    push    rdx
+    push    rdi
+    push    rsi
+
+    xor     r10, r10 ; i = 0
+    ;???????????mov     rax, [rbp+24] ; rax = srci
+    mov     r11, rdi; r11 = d  
+    sub     r11, 8*32 ; r11 = d - p*r
+    inc     r11     ; r11 = d - p*r + 1
+
+LOOP32COPYV:
+    
+    cmp r10, r11 ; i<d-p*r+1? 
+    jge  END32COPYV
+
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+
+    jmp LOOP32COPYV
+
+END32COPYV:
+
+    mov     r11, rdi ; r11 = d  
+    sub     r11, 8*8 ; r11 = d - p * r
+    inc     r11     ; r11 = d - p + 1
+
+LOOP8COPYV:
+
+    cmp r10, r11 ; i<d-p*r+1? // da provare se è possibile fare direttamente [rbp+8]-4+1
+    jge END8COPYV
+
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+    copyv_step
+
+    jmp LOOP8COPYV
+
+END8COPYV:
+
+    mov     r11, rdi ; r11 = d  
+    sub     r11, 8*2 ; r11 = d - p * r
+    inc     r11     ; r11 = d - p + 1
+
+LOOP2COPYV:
+
+    cmp r10, r11 ; i<d-p*r+1? // da provare se è possibile fare direttamente [rbp+8]-4+1
+    jge LOOPSCOPYV
+ 
+    
+    copyv_step
+    copyv_step
+
+    jmp     LOOP2COPYV
+
+LOOPSCOPYV:
+    cmp r10, rdi ; i<d?
+    jge ENDCOPYV
+
+;inserimento src in xmm9 (scalar)
+    mov      r12, rdx ; r12=srci
+    add      r12, r10 ; r12=srci+i
+    mov      r13, rsi ; r13= [src]
+    vmovss   xmm8, [r13+r12*4]
+
+
+    mov      r12, rax ; r12=desti
+    add      r12, r10 ; r12=desti+i
+    mov      r13, r9 ; r13= [dest]
+    vmovss  [r13+r12*4], xmm8  ;dest[desti+1]=src[srci+i]
+;incremento i = i+1
+    inc     r10
+
+    jmp LOOPSCOPYV
+
+ENDCOPYV:
 
     pop rsi
     pop rdi
