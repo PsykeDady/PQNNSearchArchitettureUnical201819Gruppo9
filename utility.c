@@ -11,6 +11,7 @@
 extern float dist_2_asm(int d, float *x, int xi, float *y, int yi);
 extern void diffvf_asm(int d, float *x, int xi, float *y, int yi,float * res, int ri);
 extern void azzera_array(int d, float*v);
+extern void copyv_asm(int d, float* dest, int desti, float *src, int srci);
 
 
 //decommentare per abilitare tutti i debug/decommentare per disabilitare tutti i debug

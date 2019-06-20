@@ -47,11 +47,10 @@ section .text
     add edi, 4
 %endmacro
 
-<<<<<<< HEAD
 
 %macro copyv_step 0
 ;inserimento src in xmm1 (packed)
-    mov      edx, [ebp+24 ; edx=srci
+    mov      edx, [ebp+24] ; edx=srci
     add      edx, edi ; edx=xi+i
     mov      eax, [ebp+20] ; eax= [src]
     movups   xmm1, [eax+edx*4]
@@ -67,13 +66,11 @@ section .text
 %endmacro
 
 
-=======
 %macro azzera_array_step 0
     movups [ebx+edi*4],xmm7
     add edi, 4
 %endmacro
 
->>>>>>> 8dd89b1b8bf5b60cb351736188245f92cc64c9a9
 	global dist_2_asm
 
 dist_2_asm:
