@@ -4,9 +4,6 @@
 
 section .text
 
-
-
-
 %macro dist_2_step 0
     ;inserimento x in ymm9 (packed)
     mov      r12, rdx ; r12=xi
@@ -89,11 +86,7 @@ dist_2_asm:
     push    rbp ; RDI = d, RSI = x*, RDX = xi, RCX = y*, R8 = yi
     mov     rbp, rsp
     
-    push    rax
-    push    rcx
-    push    rdx
-    push    rdi
-    push    rsi
+    
 
     xor     r10, r10 ; i = 0
     vxorps  ymm8, ymm8 ; somma = 0
@@ -101,6 +94,7 @@ dist_2_asm:
     mov     r11, rdi; r11 = d  
     sub     r11, 8*32 ; r11 = d - p*r
     inc     r11     ; r11 = d - p*r + 1
+
 
 LOOP32DIST:
     
@@ -214,11 +208,7 @@ ENDDIST:
     vaddss xmm8, xmm10
     vmovss xmm0, xmm8
 
-    pop rsi
-    pop rdi
-    pop rdx
-    pop rcx
-    pop rax
+  
     pop rbp
     
     ret
@@ -243,11 +233,7 @@ diffvf_asm:
     push    rbp ; RDI = d, RSI = x*, RDX = xi, RCX = y*, R8 = yi , R9 = res*
     mov     rbp, rsp
     
-    push    rax
-    push    rcx
-    push    rdx
-    push    rdi
-    push    rsi
+   
 
     xor     r10, r10 ; i = 0
     mov     rax, [rbp+16] ; rax = ri
@@ -362,11 +348,7 @@ LOOPSDIFF:
 
 ENDDIFF:
 
-    pop rsi
-    pop rdi
-    pop rdx
-    pop rcx
-    pop rax
+ 
     pop rbp
     
     ret

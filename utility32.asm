@@ -1,8 +1,9 @@
 ;section .data
-
+    
 ;section .bss
 
 section .text
+
 
 %macro dist_2_step 0
     ;inserimento x in xmm1 (packed)
@@ -46,6 +47,7 @@ section .text
     add edi, 4
 %endmacro
 
+<<<<<<< HEAD
 
 %macro copyv_step 0
 ;inserimento src in xmm1 (packed)
@@ -65,6 +67,13 @@ section .text
 %endmacro
 
 
+=======
+%macro azzera_array_step 0
+    movups [ebx+edi*4],xmm7
+    add edi, 4
+%endmacro
+
+>>>>>>> 8dd89b1b8bf5b60cb351736188245f92cc64c9a9
 	global dist_2_asm
 
 dist_2_asm:
@@ -95,6 +104,7 @@ dist_2_asm:
     mov     esi, ebx ; esi = d  
     sub     esi, 4*32 ; esi = d - p*r
     inc     esi     ; esi = d - p*r + 1
+
 
 LOOP32DIST:
     
@@ -480,4 +490,138 @@ ENDCOPYV:
     pop eax
     pop ebp
     
+global azzera_array
+
+azzera_array:
+    ;d -> ebp+8
+    ;v -> ebp+12
+
+    push ebp
+    mov ebp,esp
+    push eax
+    push ebx
+    push edi
+    push esi
+
+    mov eax, [ebp+8]; eax=d
+
+    mov ebx, [ebp+12]; ebx=v
+
+    xor edi,edi ; i=0
+    xorps xmm7,xmm7; [0,0,0,0]
+
+    mov esi,eax
+    sub esi,4*32 ; d-p*r
+    inc esi; d-p*r+1
+
+LOOP_AZZERA_ARRAY_32:
+    cmp edi,esi
+
+    jge END_LOOP_AZZERA_ARRAY_32
+
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_32
+
+END_LOOP_AZZERA_ARRAY_32:
+
+    mov esi,eax
+    sub esi,4*8 ; d-p*r
+    inc esi; d-p*r+1
+
+LOOP_AZZERA_ARRAY_8:
+    cmp edi,esi
+
+    jge END_LOOP_AZZERA_ARRAY_8
+
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_8
+
+END_LOOP_AZZERA_ARRAY_8:
+
+    mov esi,eax
+    sub esi,4*2 ; d-p*r
+    inc esi; d-p*r+1    
+
+LOOP_AZZERA_ARRAY_2:
+    cmp edi,esi
+
+    jge END_LOOP_AZZERA_ARRAY_2
+
+    azzera_array_step
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_2
+
+END_LOOP_AZZERA_ARRAY_2:
+
+    mov esi,eax
+    sub esi,4 ; d-p
+    inc esi; d-p+1
+
+LOOP_AZZERA_ARRAY_U:
+    cmp edi,esi
+
+    jge LOOP_AZZERA_ARRAY
+
+    azzera_array_step
+
+    jmp LOOP_AZZERA_ARRAY_U
+
+LOOP_AZZERA_ARRAY:
+    cmp edi, eax ; ciclo resto
+    jge END_LOOP_AZZERA_ARRAY
+
+    movss [ebx+edi*4],xmm7
+    inc edi
+
+    jmp LOOP_AZZERA_ARRAY
+
+END_LOOP_AZZERA_ARRAY:
+
+    pop esi
+    pop edi 
+    pop ebx
+    pop eax
+    pop ebp
+
     ret

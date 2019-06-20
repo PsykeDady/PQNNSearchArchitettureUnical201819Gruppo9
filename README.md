@@ -47,15 +47,12 @@
 
 #### ASSEMBLY
 
-* scrivere metodo dist_2 in assembly
-  * 64bit
-  * 32bit 
-* scrivere metodo distq
-  * 64bit
-  * 32bit 
-* scrivere metodo diffvf
-  * 64bit
-  * 32bit 
+* ~~scrivere metodo dist_2 in assembly~~
+  * ~~64bit~~
+  * ~~32bit~~ 
+* ~~scrivere metodo diffvf~~
+  * ~~64bit~~
+  * ~~32bit~~ 
 
 #### DOCUMENTAZIONE E MACRO ( a primo punto assembly finito && da iniziare entro 17 giugno )
 * scrivere e controllare descrizioni dei metodi c

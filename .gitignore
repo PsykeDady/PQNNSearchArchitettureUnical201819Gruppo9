@@ -3,3 +3,10 @@ pqnn64c
 pqnn32c
 Test
 test.c
+log
+*.o
+pqnn64c 
+pqnn32c
+test
+*.ann
+
