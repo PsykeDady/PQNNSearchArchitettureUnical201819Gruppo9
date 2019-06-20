@@ -1,4 +1,4 @@
 nasm -f elf32 -F dwarf -g utility32.asm -o utility32.o || exit 
-gcc -O0  -m32 -msse -lm  utility32.o  $1.c -o $1 || exit 
+gcc -O0  -m32 -msse   utility32.o  $1.c -o $1 -lm || exit 
 ./$1 && rm $1
 #./$1 && rm $1
