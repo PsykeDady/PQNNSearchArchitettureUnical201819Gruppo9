@@ -137,7 +137,7 @@ void free_block(void* p) {
 
 //aggiunto dal team9
 #define ANGIULLI
-#include "utility.c"
+#include "utility_9.c"
 
 MATRIX alloc_matrix(int rows, int cols) {
 	return (MATRIX) get_block(sizeof(float),rows*cols);

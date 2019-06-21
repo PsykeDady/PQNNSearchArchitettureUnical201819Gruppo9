@@ -4,7 +4,7 @@
  * Corso di Architetture e Programmazione dei Sistemi di Elaborazione - a.a. 2018/19
  * 
  * Progetto dell'algoritmo di Product Quantization for Nearest Neighbor Search
- * in linguaggio assembly x86-32 + SSE
+ * in linguaggio assembly x86-64 + AVX
  * 
  * Fabrizio Angiulli, aprile 2019
  * 
@@ -31,11 +31,11 @@
 
  Per generare il file eseguibile:
 
- nasm -f elf32 pqnn32.nasm && gcc -O0 -m32 -msse pqnn32.o pqnn32c.c -o pqnn32c && ./pqnn32c
+ nasm -f elf64 pqnn64.nasm && gcc -O0 -m64 -msse pqnn64.o pqnn64c.c -o pqnn64c && ./pqnn64c
  
  oppure
  
- ./runpqnn32
+ ./runpqnn64
 
 */
 
@@ -137,7 +137,7 @@ void free_block(void* p) {
 
 //aggiunto dal team9
 #define ANGIULLI
-#include "utility.c"
+#include "utility_9.c"
 
 MATRIX alloc_matrix(int rows, int cols) {
 	return (MATRIX) get_block(sizeof(float),rows*cols);
@@ -533,12 +533,14 @@ int main(int argc, char** argv) {
 		printf("\nSearching time = %.3f secs\n", ((float)t)/CLOCKS_PER_SEC);
 	else
 		printf("%.3f\n", ((float)t)/CLOCKS_PER_SEC);
+	
 	#ifdef DEBUG	
 		printf("\n\n########STAMPA DEGLI INDICI!########\n");
 		matprintmi(input->knn,input->nq,input->ANN);
 		printf("\n\n########STAMPA VALORI!########\n");
 		matprintmd(input->knn,input->nq,input->ANN_values);
 	#endif
+	
 	//
 	// Salva gli ANN
 	//

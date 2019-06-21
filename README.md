@@ -60,5 +60,6 @@
 * scrivere e controllare descrizioni dei metodi assembly64
 
 #### RELAZIONI (da iniziare 20 giugno)
-
+~* scrivere relazione~
+* riscrivere traccia angiulli (formule ecc)
 

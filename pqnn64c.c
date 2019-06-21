@@ -227,15 +227,15 @@ void pqnn_index(params* input) {
     if(! input->exaustive){
 		n=input->nr;
 		//calcolo codebook di partenza
-		init_codebook(input->d,input->n,input->ds,input->kc,input->codebookc);
+		init_codebook(input->d,n,input->ds,input->kc,input->codebookc);
 
 		//migliore codebook coarse
 		k_means(input->d,1,input->eps,input->tmin,input->tmax,input->kc,input->codebookc,n,input->ds,input->mapc);
 
+		//inizio notexaustive
+
 		//migliore mappa per il codebook coarse
 		pq(input->d,1,input->kc,input->codebookc,input->n,input->ds,input->mapyc);
-
-		
 
 		//calcolo residui y
 		for(int i=0;i<input->n;i++){
@@ -267,7 +267,8 @@ void pqnn_index(params* input) {
 		}
 
 
-	}
+	}// non esaustivo
+	//totale
 	init_codebook(input->d,n,input->ds,input->k,input->codebookp);
 
 	
@@ -331,7 +332,7 @@ int main(int argc, char** argv) {
 	input->tmax = 100;
 	input->silent = 0;
 	input->display = 0;
-	input->nr=-1;
+	input->nr=0;
 
 	//
 	// Legge i valori dei parametri da riga comandi
@@ -468,8 +469,7 @@ int main(int argc, char** argv) {
 	sprintf(fname, "%s.ds", input->filename);
 	input->ds = load_data(fname, &input->n, &input->d);
 	
-	if(input->nr==-1) input->nr = input->n/20;
-    else if(input->nr==0) input->nr=input->n;
+	if(input->nr==0) input->nr = input->n/20;
 
 	sprintf(fname, "%s.qs", input->filename);
 	input->qs = load_data(fname, &input->nq, &input->d);

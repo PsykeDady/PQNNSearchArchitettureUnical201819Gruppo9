@@ -1,0 +1,14 @@
+NOTA BENE:
+ il parametro -D"ASM" (o -D$ASM impostando la variabile ASM="ASM" se la compilazione nasm va a buon fine) abilita l'utilizzo dei metodi scritti in assembly a dispetto di quelli scritti in c
+ 
+ i nomi dei file assembly tra 32bit e 64bit non variano, ciò che decide quale versione viene usata è solo quali file sono passati al linker
+ 
+ il file che contiene le funzioni c usate è utility.c e non varia con l'architettura usata (32 o 64 bit)
+ 
+ le parentesi graffe attorno ai parametri con numero superiore a 10 son state specificate poichè a tempo d'esecuzione venivano riprodotti più volte il primo, il secondo e il terzo parametro
+ 
+ spostando il parametro -lm di gcc in posizioni diverse dall'ultima potrebbe dare errore di compilazione su vecchie versioni di gcc
+ 
+ i flag di DEBUG necessitano di un ulteriore file .c per poter funzionare correttamente dopo essere stati abilitati.
+ 
+ il flag ANGIULLI se commentato ridefinisce alcune strutture di pqnn**.c in utility.c, onde per cui non commentare
