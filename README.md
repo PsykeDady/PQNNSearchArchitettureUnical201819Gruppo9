@@ -55,11 +55,14 @@
   * ~~32bit~~ 
 
 #### DOCUMENTAZIONE E MACRO ( a primo punto assembly finito && da iniziare entro 17 giugno )
-* scrivere e controllare descrizioni dei metodi c
+* ~~scrivere e controllare descrizioni dei metodi c~~
 * scrivere e controllare descrizioni dei metodi assembly32
 * scrivere e controllare descrizioni dei metodi assembly64
 
 #### RELAZIONI (da iniziare 20 giugno)
-~* scrivere relazione~
-* riscrivere traccia angiulli (formule ecc)
+* ~~scrivere relazione~~
+* ~~riscrivere traccia angiulli (formule ecc)~~
+
+#### POST-CONSEGNA
+* possibile ottimizzazione SDC e ADC: creare la matrice delle distanze man mano che le distanze vengono richieste
 
