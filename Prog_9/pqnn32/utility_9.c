@@ -299,17 +299,20 @@ pq(d,m,k,codebook,n,dataset,map);
 
 /**
  * argomenti:       
- *  - d        = dimensione dei singoli vettori
- *  - dstar    = dimensione sotto vettori ( per algoritmo a sottovettori) 
- *  - mi       = indice di colonna di partenza (per algoritmo a sottovettori pq)
- *  - dataset  = insieme di punti da cui prelevare il punto query 
- *  - di       = indice iniziale del punto query 
- *  - k        = numero di centroidi nel codebook
- *  - codebook = insieme di centroidi (vettori di Rd) 
+ *  -d        = dimensione dei singoli vettori
+ *  -dstar    = dimensione sotto vettori ( per algoritmo a sottovettori) 
+ *  -mi       = indice di colonna di partenza (per algoritmo a sottovettori pq)
+ *  -dataset  = insieme di punti da cui prelevare il punto query 
+ *  -di       = indice iniziale del punto query 
+ *  -k        = numero di centroidi nel codebook
+ *  -codebook = insieme di centroidi (vettori di Rd) 
  * 
  * descr:
  *  -considerato il punto indicizzato nel dataset a partire dall'indice di (in R^d) si cerca un centroide nel codebook (tra k centroidi) tale da minimizzare la distanza. Ogni distanza viene calcolata con la funzione dist. 
  * Funziona sia con sottovettori che non, per non usare i sottovettori porre dstar=d e mi=0
+ * 
+ * return:
+ * -l'indice nel codebook del centroide più vicino al punto di del dataset
  */
 int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* codebook){
     #ifdef DEBUG_MINDIST
@@ -368,7 +371,7 @@ int mindist(int d, int dstar, int mi, float *dataset, int di, int k, float* code
  *  -codebook = codebook da riempire
  * 
  * descrizione:
- * -si riempie il codebook con valori random facenti parte dell'insieme di partenza
+ * -si riempie il codebook con i primi k valori facenti parte del datase di partenza
  */
 void init_codebook(int d, int n, float* dataset, int k, float* codebook){
     #ifdef DEBUG_INITCODEBOOK
@@ -398,6 +401,9 @@ void init_codebook(int d, int n, float* dataset, int k, float* codebook){
  * 
  * descrizione:
  * -calcola il valore della funzione obiettivo attuale come 'la somma delle distanze al quadrato di ogni punto dal suo centroide'
+ * 
+ * return:
+ * -il valore dell'obiettivo
  */
 double obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook){
     #ifdef DEBUG_OBIETTIVO
@@ -426,15 +432,15 @@ double obiettivo(int d, int m, int n, float* dataset, int *map,  float* codebook
 
 /**
  * argomenti:
- *  - 'd' numero di coordinate per punto
- *  - 'm' numero di sottovettori
- *  - 'n' numero di elementi del dataset (righe di map)
- *  - 'dataset' insieme di punti
- *  - 'map' mappa di corrispondenza punto-centroide associato 
- *  - 'k' numero di centroidi
- *  - 'codebook' lista di centroidi
+ *  - 'd'        = numero di coordinate per punto
+ *  - 'm'        = numero di sottovettori
+ *  - 'n'        = numero di elementi del dataset (righe di map)
+ *  - 'dataset'  = insieme di punti
+ *  - 'map'      = mappa di corrispondenza punto-centroide associato 
+ *  - 'k'        = numero di centroidi
+ *  - 'codebook' = lista di centroidi
  * descrizione:
- * - genera un set di nuovi centroidi calcolando la media degli elementi che gli sono associati
+ * - genera un set di nuovi centroidi calcolando la media degli elementi che gli sono associati. Se un centroide non ha punti associati, gli viene dato tutto 0
  */
 void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float* codebook){
 
@@ -500,19 +506,16 @@ void nuovicentroidi (int d, int m, int n, float* dataset, int* map, int k, float
 
 /**
  * argomenti:
- * -d=dimensione singoli vettori
- * -m=numero di sottovettori
- * -k=numero di centroidi
- * -codebook=insieme centroidi
- * -n=dimensione dataset
- * -dataset=insieme di punti
+ * -d        = dimensione singoli vettori
+ * -m        = numero di sottovettori
+ * -k        = numero di centroidi
+ * -codebook = insieme centroidi
+ * -n        = dimensione dataset
+ * -dataset  = insieme di punti
+ * -map      = matrice di indici interi di dimensione n a cui associare per ogni cella un indice del codebook
  * 
  * descrizione:
- * -TODO
- * 
- * 
- * OTTIMIZZAZIONE:
- *  - si può restituire la mappa come raccolta di indici del codebook
+ * -viene creata un associazione tra elementi del dataset e codebook memorizzando i sotto centroidi più vicini per ogni punto
  * 
  */
 void pq(int d, int m, int k, float *codebook, int n, float *dataset, int*map){
@@ -557,7 +560,22 @@ void pq(int d, int m, int k, float *codebook, int n, float *dataset, int*map){
 
 
 
-
+/**
+ * args:
+ * -d        = dimensione dei vettori
+ * -m        = numero di sottovettori
+ * -eps      = epsilon, fattore di precisione
+ * -tmin     = numero minimo di ricollocamento dei centroidi
+ * -tmax     = numero massimo di ricollocamento dei centroidi
+ * -k        = numero centroidi
+ * -codebook = insieme di centroidi
+ * -n        = numero di elementi del dataset
+ * -dataset  = insieme di punti
+ * -map      = associazioni dataset-codebook
+ * 
+ * descr:
+ * -algoritmo di costruzione del miglior codebook possibile. bisogna passare un codebook già esistente
+ */
 
 void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codebook, int n, float* dataset, int* map){
 
@@ -618,7 +636,18 @@ void k_means( int d, int m, float eps, int tmin, int tmax, int k, float* codeboo
 
 
 
-
+/**
+ * args:
+ * -values  = insieme di valori da ordinare  
+ * -indices = indici correlati ai valori da ordinare
+ * -start   = colonna da cui iniziare l'ordinamento
+ * -mean    = indice medio ordinamento. primo vettore [start,mean-1] secondo [mean,end-1]
+ * -end     = indice finale ordinamento
+ * -offset  = cella da cui iniziare ad ordinare
+ * 
+ * descr:
+ * -fonde due sottovettori parzialmente ordinati dall'indice offset+start e offset+mean-1 e da offset+mean a offset+end-1 
+ */
 void merge(double* values, int* indices, int start, int mean, int end, int offset) {
 
     #ifdef DEBUG_MERGE
@@ -717,6 +746,18 @@ void merge(double* values, int* indices, int start, int mean, int end, int offse
     }
 }
 
+
+/**
+ * args:
+ * -values  = insieme di valori da ordinare  
+ * -indices = indici correlati ai valori da ordinare
+ * -start   = colonna da cui iniziare l'ordinamento
+ * -end     = indice finale ordinamento
+ * -offset  = cella da cui iniziare ad ordinare
+ * 
+ * descr:
+ * -ordina i vettori values e indices seuendo l'ordinamento crescente di values
+ */
 void mergeSort(double* values, int* indices, int start, int end, int offset) {
     int mean;
     if (start < end) {
@@ -730,19 +771,21 @@ void mergeSort(double* values, int* indices, int start, int end, int offset) {
 
 /**
  * args:
- * -d= dimensione del vettore
- * -m=numero di sottovettori
- * -nd=numero distanze
- * -distanze=distanze tra tutti i punti del codebook
- * -K=numero elementi in ANN
- * -ANN=risultati (set già inizializzato)
- * -n=numero di elementi nel dataset
- * -map=dataset
- * -ix= indice del punto query, per memorizzarlo in ANN
- * -qx= pq(x), vettore a m celle con il centroide di x
+ * -d          = dimensione del vettore
+ * -k          =
+ * -m          = numero di sottovettori
+ * -nrd        = numero distanze
+ * -distanze   = distanze tra tutti i punti del codebook
+ * -K          = numero elementi in ANN
+ * -ANN        = risultati (set già inizializzato)
+ * -ANN_values = valori delle distanze relative ai risultati
+ * -n          = numero di elementi nel dataset
+ * -map        = dataset
+ * -ix         = indice del punto query, per memorizzarlo in ANN 
+ * -qx       = pq(x), vettore a m celle con il centroide di x
  * 
  * descrizione:
- * implementa la distanza simmetrica con un singolo punto
+ * -implementa la distanza simmetrica con un singolo punto ( e la scrive in ANN, il valore in ANN_values)
  */
 void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, double* ANN_values, int n, int* map, int ix, int *qx){
     #ifdef DEBUG_SDC
@@ -844,18 +887,20 @@ void SDC (int d, int k, int m, int nrd, double* distanze, int K, int*ANN, double
 
 /**
  * args:
- * -d= dimensione del vettore
- * -m=numero di sottovettori
- * -k=numero centroidi
- * -codebook=centroidi
- * -K=numero elementi in ANN
- * -ANN=risultati (set già inizializzato)
- * -n=numero di elementi nel dataset
- * -map=dataset
- * -qs: struttura con punti query
+ * -d          = dimensione del vettore
+ * -m          = numero di sottovettori
+ * -k          = numero centroidi
+ * -codebook   = centroidi
+ * -K          = numero elementi in ANN
+ * -ANN        = risultati (set già inizializzato)
+ * -ANN_values = valori delle distanze relative ai risultati
+ * -n          = numero di elementi nel dataset
+ * -map        = dataset
+ * -nq         = numero di punti 
+ * -qs         = struttura con punti query
  * 
  * descrizione:
- * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
+ * -scrive in ANN gli indici dei punti più vicini a x usando l'algoritmo di distanza simmetrica (in ANN_values scrive invece i valori)
  */
 void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, double* ANN_values, int n, int*map, int nq, float*qs){
     #ifdef DEBUG_ANNSDC
@@ -936,19 +981,20 @@ void ANNSDC(int d, int m, int k, float* codebook, int K, int*ANN, double* ANN_va
 
 /**
  * args:
- * -d= dimensione del vettore
- * -m=numero di sottovettori
- * -nd=numero distanze
- * -distanze=distanze tra tutti i punti del codebook
- * -K=numero elementi in ANN
- * -ANN=risultati (set già inizializzato)
- * -n=numero di elementi nel dataset
- * -map=dataset
- * -ix= indice del punto query, per memorizzarlo in ANN
- * -icent=il punto query quantizzato (contiene una lista di indici a cui è associato il centroide corrispondente)
+ * -d          = dimensione del vettore
+ * -k          = numero di centroidi
+ * -m          = numero di sottovettori
+ * -distanze   = distanze tra tutti i punti del codebook
+ * -K          = numero elementi in ANN
+ * -ANN        = risultati (set già inizializzato)
+ * -ANN_values = valori delle distanze relative ai risultati
+ * -n          = numero di elementi nel dataset
+ * -map        = associazioni dataset-codebook
+ * -ix         = indice del punto query, per memorizzarlo in ANN
+ * -qs         = insieme di punti del queryset
  * 
  * descrizione:
- * implementa la distanza simmetrica con un singolo punto
+ * -implementa la distanza asimmetrica con un singolo punto ( e la scrive in ANN, il valore in ANN_values)
  */
 void ADC (int d, int k, int m, double* distanze, int K, int*ANN, double* ANN_values,int n, int* map, int ix, float *qs){
     #ifdef DEBUG_ADC
@@ -1055,18 +1101,20 @@ void ADC (int d, int k, int m, double* distanze, int K, int*ANN, double* ANN_val
 
 /**
  * args:
- * -d= dimensione del vettore
- * -m=numero di sottovettori
- * -k=numero centroidi
- * -codebook=centroidi
- * -K=numero elementi in ANN
- * -ANN=risultati (set già inizializzato)
- * -n=numero di elementi nel dataset
- * -map=dataset
- * -qs: struttura con punti query
+ * -d          = dimensione del vettore
+ * -m          = numero di sottovettori
+ * -k          = numero centroidi
+ * -codebook   = centroidi
+ * -K          = numero elementi in ANN
+ * -ANN        = risultati (set già inizializzato)
+ * -ANN_values = valori delle distanze relative ai risultati
+ * -n          = numero di elementi nel dataset
+ * -map        = associazioni dataset-codebook
+ * -nq         = numero punti query set
+ * -qs         = struttura con punti query
  * 
  * descrizione:
- * -scrive in ANN i punti più vicini a x usando l'algoritmo di distanza simmetrica
+ * -scrive in ANN gli indici dei punti più vicini a x usando l'algoritmo di distanza asimmetrica (in ANN_values scrive invece i valori)
  */
 void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, double* ANN_values, int n, int*map, int nq, float*qs){
     #ifdef DEBUG_ANNADC
@@ -1112,16 +1160,16 @@ void ANNADC(int d, int m, int k, float* codebook, int K, int*ANN, double* ANN_va
 }
 
 /**
- * -d:dimensione vettori
- * -w:numero centoidi da associare
- * -qs: query set
- * -ix: indice x
- * -k:numero elementi codebook
- * -codebook: struttura centroidi
- * -rx:struttura di ritorno
+ * -d        = dimensione vettori
+ * -w        = numero centoidi da associare
+ * -qs       = query set
+ * -ix       = indice di x nel qs
+ * -k        = numero elementi codebook
+ * -codebook = struttura centroidi
+ * -mapxw    = struttura di ritorno
  * 
- * descr: 
- *  TODO
+ * descr 
+ *  -scrive in mapxw i w centroidi più vicini al punto ix di qs
  */
 
 void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, int*mapxw){
@@ -1169,20 +1217,12 @@ void centroidi_associati(int d, int w, float* qs,int ix, int k, float*codebook, 
 
 /**
  * args:
- * -d=dimensione vettori
- * -m=numero sotto-vettori
- * -w=numero centroidi per querypoint
- * -n=dimensione dataset
- * -ds=dataset
- * -k=dimensione codebook
- * -nq=dimensione query set
- * -qs=query set
- * -K=numero di ANN da trovare
- * -ANN=matrice dei vicini
+ * -input = insieme di parametri descritti nella struttura params.
  * 
  * 
  * descr:
- * -TODO
+ * -applica la ricerca non esaustiva, simmetrica o asimmetrica in relazione a quanto specificato dal parametro 'symmetric'.
+ * Supponendo già per calcolati i residui, le associazioni tra residui e centroidi, i codebook coarse e non, i centroidi associati per ogni x e le associazioni qc(x-q(y)), allora vengono precalcolate le distanze punto-residuo come descritto dall'algoritmo SDC o ADC (quindi associazione-associazione o punto-associazione) e ricercate le minori. Gli indici vengono messi in ANN e i valori in ANN_values
  */
 void notExaustive(params* input){
 
