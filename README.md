@@ -64,6 +64,7 @@
 * ~~riscrivere traccia angiulli (formule ecc)~~
 
 #### POST-CONSEGNA
+* provare in assembly a mettere x+xi*d in un registro (velocizza l'accesso)
 * possibile ottimizzazione SDC e ADC: creare la matrice delle distanze man mano che le distanze vengono richieste
 * struttura switch case alla duff per unrolling (possibile? testare)
 * testare tempi unrolling inglobando l'incremento parziale della variabile dentro l'indirizzamento
